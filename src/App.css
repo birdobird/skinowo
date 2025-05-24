@@ -1,0 +1,23 @@
+:root {
+  --bgColor: #14171b;
+  --secondaryBgColor: #0f1215;
+  --btnColor: #a2ff46;
+  --fontColor: #ffffff;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.container {
+  width: 100%;
+  max-width: 1280px;
+}
