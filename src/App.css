@@ -17,6 +17,21 @@
   }
 }
 
+/* Scrollbar styling */
+.terms-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.terms-scrollbar::-webkit-scrollbar-track {
+  background: #1e2126;
+  border-radius: 10px;
+}
+
+.terms-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--btnColor);
+  border-radius: 10px;
+}
+
 .container {
   width: 100%;
   max-width: 1280px;

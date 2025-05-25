@@ -1,15 +1,17 @@
 import { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 type FAQItemProps = {
   question: string;
   answer: string;
   isOpen: boolean;
   onClick: () => void;
+  isLast?: boolean;
 };
 
-const FAQItem = ({ question, answer, isOpen, onClick }: FAQItemProps) => {
+const FAQItem = ({ question, answer, isOpen, onClick, isLast = false }: FAQItemProps) => {
   return (
-    <div className="border-b border-gray-800 bg-[var(--bgColor)]">
+    <div className={`${isLast ? '' : 'border-b border-gray-800'} bg-[var(--bgColor)]`}>
       <button
         className="w-full bg-[var(--bgColor)] cursor-pointer py-5 px-4 text-left flex justify-between items-center focus:outline-none"
         onClick={onClick}
@@ -35,36 +37,46 @@ const FAQItem = ({ question, answer, isOpen, onClick }: FAQItemProps) => {
   );
 };
 
+type FAQItem = {
+  question: string;
+  answer: string;
+};
+
 type FAQProps = {
   withBackground?: boolean;
   withTitle?: boolean;
+  customFaqItems?: FAQItem[];
 };
 
-const FAQ = ({ withBackground = false, withTitle = true }: FAQProps) => {
+const FAQ = ({ withBackground = false, withTitle = true, customFaqItems }: FAQProps) => {
+  const { t } = useLanguage();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
-  const faqItems = [
+  const defaultFaqItems = [
     {
-      question: 'W jaki sposób mogę sprzedać swoje skiny?',
-      answer: 'Aby sprzedać skiny, musisz przejść przez kilka prostych kroków. Po pierwsze, zaloguj się do swojego konta. Następnie wybierz skiny, które chcesz sprzedać, i dodaj je do koszyka. Po zatwierdzeniu transakcji, środki zostaną przelane na Twoje konto natychmiast po jej zakończeniu. W zależności od metody płatności, transakcje mogą trwać do 24 godzin. Jeśli zauważysz, że trwa to dłużej, skontaktuj się z naszym zespołem wsparcia.'
+      question: t('faq.question1'),
+      answer: t('faq.answer1')
     },
     {
-      question: 'Jakie metody płatności są dostępne?',
-      answer: 'Oferujemy szeroki zakres metod płatności, w tym przelewy bankowe, portfele elektroniczne jak PayPal, Skrill, płatności kartą oraz popularne metody lokalne. Wszystkie transakcje są zabezpieczone i szyfrowane, aby zapewnić maksymalne bezpieczeństwo Twoich środków.'
+      question: t('faq.question2'),
+      answer: t('faq.answer2')
     },
     {
-      question: 'Czy mogę sprzedać skiny z innych gier niż CS2?',
-      answer: 'Obecnie nasza platforma obsługuje tylko skiny z CS2. Planujemy jednak rozszerzyć naszą ofertę o inne popularne gry w przyszłości. Śledź nasze media społecznościowe, aby być na bieżąco z nowościami.'
+      question: t('faq.question3'),
+      answer: t('faq.answer3')
     },
     {
-      question: 'Ile czasu zajmuje otrzymanie pieniędzy po sprzedaży?',
-      answer: 'W większości przypadków środki są przekazywane natychmiast po zakończeniu transakcji. Jednak w zależności od wybranej metody płatności, czas przetwarzania może się różnić. Przelewy bankowe mogą trwać do 24 godzin, podczas gdy płatności elektroniczne są zazwyczaj natychmiastowe.'
+      question: t('faq.question4'),
+      answer: t('faq.answer4')
     },
     {
-      question: 'Czy pobieracie prowizję od sprzedaży?',
-      answer: 'Tak, pobieramy niewielką prowizję od każdej transakcji, aby utrzymać naszą platformę i zapewnić najwyższą jakość usług. Dokładna wysokość prowizji jest zawsze wyraźnie widoczna przed finalizacją transakcji, więc nie ma żadnych ukrytych opłat.'
+      question: t('faq.question5'),
+      answer: t('faq.answer5')
     }
   ];
+  
+  // Użyj niestandardowych elementów FAQ, jeśli zostały dostarczone, w przeciwnym razie użyj domyślnych
+  const faqItems = customFaqItems || defaultFaqItems;
 
   const toggleFAQ = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -79,30 +91,31 @@ const FAQ = ({ withBackground = false, withTitle = true }: FAQProps) => {
       <div className="container mx-auto relative z-10">
         {withTitle && (
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-black uppercase mb-4">POZNAJ ODPOWIEDZI NA PYTANIA</h2>
+            <h2 className="text-3xl font-black uppercase mb-4">{t('homePage.faq.title')}</h2>
             <p className="text-sm text-gray-400 max-w-2xl mx-auto">
-              Masz wątpliwości? Chcesz dowiedzieć się jak działa system sprzedaży? Wyjaśnimy każdy aspekt transakcji, aby to było przejrzyste i bezpieczne. Jeśli nie znajdziesz odpowiedzi na swoje pytanie, zawsze możesz skontaktować się z naszym zespołem pomocy.
+              {t('homePage.faq.description')}
             </p>
           </div>
         )}
         
         <div className="w-full rounded-lg overflow-hidden shadow-xl border border-gray-800 bg-[var(--bgColor)]">
-          {faqItems.map((item, index) => (
+          {faqItems.map((item: FAQItem, index: number) => (
             <FAQItem
               key={index}
               question={item.question}
               answer={item.answer}
               isOpen={openIndex === index}
               onClick={() => toggleFAQ(index)}
+              isLast={index === faqItems.length - 1}
             />
           ))}
         </div>
         
         <div className="text-center mt-8">
           <p className="text-sm text-gray-500">
-            Nie znalazłeś odpowiedzi na swoje pytanie? 
+          {t('homePage.faq.noanswer')}
             <a href="/support" className="text-[var(--btnColor)] ml-1 hover:underline">
-              Skontaktuj się z nami
+              {t('homePage.faq.contactUs')}
             </a>
           </p>
         </div>
