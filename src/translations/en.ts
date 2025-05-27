@@ -290,6 +290,39 @@ export const en = {
   },
 
   // FAQ
+  // Admin Panel
+  admin: {
+    dashboard: "Dashboard",
+    users: "Users",
+    transactions: "Transactions",
+    tickets: "Tickets",
+    analytics: "Analytics",
+    backToHome: "Back to homepage",
+    adminPanel: "Admin Panel",
+    refresh: "Refresh",
+    viewAll: "View all",
+    details: "Details",
+    respond: "Respond",
+    close: "Close",
+    reopen: "Reopen",
+    save: "Save",
+    approve: "Approve",
+    reject: "Reject",
+    status: {
+      open: "Open",
+      closed: "Closed",
+      pending: "Pending",
+      completed: "Completed",
+      failed: "Cancelled"
+    },
+    stats: {
+      users: "Users",
+      pendingTransactions: "Pending Transactions",
+      openTickets: "Open Tickets",
+      totalSales: "Total Sales"
+    }
+  },
+
   faq: {
     question1: "How can I sell my skins?",
     answer1: "To sell skins, you need to go through a few simple steps. First, log in to your account. Then select the skins you want to sell and add them to your cart. After confirming the transaction, funds will be transferred to your account immediately after its completion. Depending on the payment method, transactions can take up to 24 hours. If you notice it's taking longer, contact our support team.",

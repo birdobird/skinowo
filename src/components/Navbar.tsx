@@ -1,13 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useAdmin } from '../context/AdminContext';
 import { useLanguage } from '../context/LanguageContext';
 import skinowoLogo from '/src/assets/skinowologo.png';
+import steamLogo from '/src/assets/steam-logo.png';
 
 const Navbar = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
+  const { isAdmin } = useAdmin();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -166,6 +169,15 @@ const Navbar = () => {
                     >
                       {t('myInventory')}
                     </Link>
+                    {isAdmin && (
+                      <Link 
+                        to="/admin"
+                        className="block px-4 py-2 text-sm hover:bg-white/5 transition-colors text-[var(--btnColor)]"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        Panel Administracyjny
+                      </Link>
+                    )}
                     <button 
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-white/5 transition-colors cursor-pointer"
@@ -177,13 +189,9 @@ const Navbar = () => {
               </div>
             ) : (
               <Link to="/login">
-                <button className="bg-[var(--btnColor)] hover:bg-[var(--btnColor)/8] transition-colors flex items-center gap-2 text-[var(--bgColor)] px-4 py-2 uppercase text-xs font-semibold rounded-full cursor-pointer">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="var(--bgColor)"/>
-                  <path d="M16.5 13C15.67 13 15 12.33 15 11.5C15 10.67 15.67 10 16.5 10C17.33 10 18 10.67 18 11.5C18 12.33 17.33 13 16.5 13Z" fill="white"/>
-                  <path d="M9 16C7.9 16 7 15.1 7 14C7 12.9 7.9 12 9 12C10.1 12 11 12.9 11 14C11 15.1 10.1 16 9 16Z" fill="white"/>
-                </svg>
-                  Zaloguj na Steam
+                <button className="bg-[var(--btnColor)] hover:bg-[var(--btnColor)/8] transition-colors flex items-center gap-2 text-[var(--bgColor)] font-semibold px-4 py-2 uppercase text-xs rounded-full cursor-pointer">
+                  <img src={steamLogo} alt="Steam Logo" className="w-5 h-5" />
+                  {t('loginSteam')}
                 </button>
               </Link>
             )}

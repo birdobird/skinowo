@@ -279,6 +279,39 @@ export const pl = {
   instantPayment: "Natychmiastowa wypłata",
   instantPaymentDesc: "Otrzymasz pieniądze od razu po zaakceptowaniu oferty, bez oczekiwania.",
   
+  // Panel administracyjny
+  admin: {
+    dashboard: "Panel główny",
+    users: "Użytkownicy",
+    transactions: "Transakcje",
+    tickets: "Zgłoszenia",
+    analytics: "Analityka",
+    backToHome: "Powrót do strony głównej",
+    adminPanel: "Panel Administracyjny",
+    refresh: "Odśwież",
+    viewAll: "Zobacz wszystkie",
+    details: "Szczegóły",
+    respond: "Odpowiedz",
+    close: "Zamknij",
+    reopen: "Otwórz ponownie",
+    save: "Zapisz",
+    approve: "Zatwierdź",
+    reject: "Odrzuć",
+    status: {
+      open: "Otwarte",
+      closed: "Zamknięte",
+      pending: "Oczekujące",
+      completed: "Zakończone",
+      failed: "Anulowane"
+    },
+    stats: {
+      users: "Użytkownicy",
+      pendingTransactions: "Oczekujące transakcje",
+      openTickets: "Otwarte zgłoszenia",
+      totalSales: "Suma sprzedaży"
+    }
+  },
+  
   // Strona logowania
   loginPage: {
     title: "Zaloguj się do Skinowo",
