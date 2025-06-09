@@ -5,25 +5,40 @@ import { en } from '../translations/en';
 // Typ dla języków
 type Language = 'pl' | 'en';
 
+// Typ dla tłumaczeń
+type TranslationValue = string | string[] | { [key: string]: TranslationValue };
+type Translations = Record<string, TranslationValue>;
+
 // Typ dla kontekstu językowego
 interface LanguageContextType {
   language: Language;
   setLanguage: (language: Language) => void;
-  t: (key: string) => string;
-  translations: typeof pl | typeof en;
+  t: (key: string) => string | string[];
+  translations: Translations;
 }
 
 // Tłumaczenia
-const translations = {
+const translations: Record<Language, Translations> = {
   pl,
   en
+};
+
+// Funkcja pomocnicza do głębokiego wyszukiwania w obiektach tłumaczeń
+const getNestedTranslation = (obj: any, key: string): TranslationValue | undefined => {
+  return key.split('.').reduce((o, k) => (o && o[k] !== undefined ? o[k] : undefined), obj);
 };
 
 // Domyślne wartości kontekstu
 const defaultLanguageContext: LanguageContextType = {
   language: 'pl',
   setLanguage: () => {},
-  t: (key: string) => key,
+  t: (key: string) => {
+    const value = getNestedTranslation(pl, key);
+    if (typeof value === 'string' || Array.isArray(value)) {
+      return value;
+    }
+    return key;
+  },
   translations: pl
 };
 
@@ -51,11 +66,16 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     setCurrentTranslations(translations[newLanguage]);
   };
 
-  // Funkcja do tłumaczenia
-  const t = (key: string): string => {
-    // Sprawdzenie, czy klucz istnieje w tłumaczeniach
-    const result = key.split('.').reduce((obj, i) => (obj as any)?.[i], currentTranslations);
-    return typeof result === 'string' ? result : key;
+  // Funkcja tłumacząca
+  const t = (key: string): string | string[] => {
+    const value = getNestedTranslation(currentTranslations, key);
+    
+    if (typeof value === 'string' || Array.isArray(value)) {
+      return value;
+    }
+    
+    // Jeśli nie znaleziono tłumaczenia, zwróć klucz
+    return key;
   };
 
   // Efekt do inicjalizacji języka

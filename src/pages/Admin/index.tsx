@@ -3,50 +3,67 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AdminSidebar from './components/AdminSidebar';
 import AdminHeader from './components/AdminHeader';
-
-// Hardcoded admin IDs for demo purposes
-const ADMIN_IDS = ['76561198123456789'];
+import { toast } from 'react-toastify';
 
 const Admin = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // Check if user is admin directly in this component
+  // Check if user is admin
   useEffect(() => {
-    // Only run this once
+    // Only run this once or when auth state changes
     if (initialized) return;
-
-    const checkAccess = () => {
-      if (!isAuthenticated || !user) {
-        console.log('User not authenticated, redirecting to login');
-        navigate('/login');
-        return;
-      }
-
-      // Check if user is admin
-      const hasAdminAccess = ADMIN_IDS.includes(user.steamId);
-      setIsAdmin(hasAdminAccess);
-
-      if (!hasAdminAccess) {
-        console.log('User not admin, redirecting to home');
+    
+    // If auth is still loading, wait
+    if (isAuthLoading) {
+      return;
+    }
+    
+    // If user is not authenticated, redirect to login
+    if (!isAuthenticated || !user) {
+      navigate('/login', { state: { from: '/admin' } });
+      return;
+    }
+    
+    // If user is authenticated, check admin status
+    const checkAdminStatus = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/check-admin`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to check admin status');
+        }
+        
+        const data = await response.json();
+        
+        if (!data.isAdmin) {
+          toast.error('Brak uprawnień administratora');
+          navigate('/');
+          return;
+        }
+        setIsAdmin(true);
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        toast.error('Błąd podczas sprawdzania uprawnień');
         navigate('/');
-        return;
+      } finally {
+        setIsLoading(false);
+        setInitialized(true);
       }
-
-      setIsLoading(false);
     };
-
-    // Short timeout to ensure auth state is fully loaded
-    const timer = setTimeout(() => {
-      checkAccess();
-      setInitialized(true);
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [user, isAuthenticated, navigate, initialized]);
+    
+    // Start checking admin status
+    checkAdminStatus();
+  }, [user, isAuthenticated, navigate, initialized, isAuthLoading]);
 
   // Simple loading state
   if (isLoading) {

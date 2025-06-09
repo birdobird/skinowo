@@ -85,15 +85,17 @@ const Navbar = () => {
               <div className={`absolute bottom-0 left-0 w-full h-0.5 bg-[var(--btnColor)] transform origin-left transition-transform duration-300 ${isActive('/support') ? 'scale-x-80' : 'scale-x-0 group-hover:scale-x-80'}`}></div>
             </div>
             {user && (
-              <div className="relative group">
-                <Link 
-                  to="/inventory" 
-                  className={`uppercase font-medium text-xxs transition-colors text-[#585858] duration-300 ${isActive('/inventory') ? 'text-[var(--fontColor)]' : 'hover:text-[var(--fontColor)]'}`}
-                >
-                  {t('inventory')}
-                </Link>
-                <div className={`absolute bottom-0 left-0 w-full h-0.5 bg-[var(--btnColor)] transform origin-left transition-transform duration-300 ${isActive('/inventory') ? 'scale-x-80' : 'scale-x-0 group-hover:scale-x-80'}`}></div>
-              </div>
+              <>
+                <div className="relative group">
+                  <Link 
+                    to="/inventory" 
+                    className={`uppercase font-medium text-xxs transition-colors text-[#585858] duration-300 ${isActive('/inventory') ? 'text-[var(--fontColor)]' : 'hover:text-[var(--fontColor)]'}`}
+                  >
+                    {t('inventory')}
+                  </Link>
+                  <div className={`absolute bottom-0 left-0 w-full h-0.5 bg-[var(--btnColor)] transform origin-left transition-transform duration-300 ${isActive('/inventory') ? 'scale-x-80' : 'scale-x-0 group-hover:scale-x-80'}`}></div>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -158,16 +160,13 @@ const Navbar = () => {
                 
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-[var(--bgColor)] border border-gray-700 rounded-lg shadow-xl z-50">
-                    <div className="p-3 border-b border-gray-700">
-                      <p className="text-sm font-medium">{user.username}</p>
-                      <p className="text-xs text-gray-400">Steam ID: {user.steamId}</p>
-                    </div>
+                    <div className="p-3">
                     <Link 
-                      to="/inventory"
-                      className="block px-4 py-2 text-sm hover:bg-white/5 transition-colors"
+                      to="/account" 
+                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 transition-colors"
                       onClick={() => setDropdownOpen(false)}
                     >
-                      {t('myInventory')}
+                      {t('profileAndTickets')}
                     </Link>
                     {isAdmin && (
                       <Link 
@@ -179,18 +178,22 @@ const Navbar = () => {
                       </Link>
                     )}
                     <button 
-                      onClick={handleLogout}
+                      onClick={() => {
+                        handleLogout();
+                        setDropdownOpen(false);
+                      }}
                       className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-white/5 transition-colors cursor-pointer"
                     >
                       {t('logout')}
                     </button>
                   </div>
+                  </div>
                 )}
               </div>
             ) : (
               <Link to="/login">
-                <button className="bg-[var(--btnColor)] hover:bg-[var(--btnColor)/8] transition-colors flex items-center gap-2 text-[var(--bgColor)] font-semibold px-4 py-2 uppercase text-xs rounded-full cursor-pointer">
-                  <img src={steamLogo} alt="Steam Logo" className="w-5 h-5" />
+                <button className="bg-[var(--btnColor)] hover:opacity-90 transition-colors flex items-center gap-2 text-[var(--bgColor)] font-semibold px-4 py-2 uppercase text-xs rounded-full cursor-pointer">
+                  <img src={steamLogo} alt="Steam Logo" className="w-5" />
                   {t('loginSteam')}
                 </button>
               </Link>
@@ -296,9 +299,9 @@ const Navbar = () => {
             </Link>
             {user && (
               <Link 
-                to="/inventory" 
+                to="/account/inventory" 
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block px-4 py-3 rounded-lg text-base font-medium ${isActive('/inventory') ? 'bg-[var(--btnColor)]/20 text-[var(--btnColor)]' : 'text-white hover:bg-gray-800'}`}
+                className={`block px-4 py-3 rounded-lg text-base font-medium ${isActive('/account/inventory') ? 'bg-[var(--btnColor)]/20 text-[var(--btnColor)]' : 'text-white hover:bg-gray-800'}`}
               >
                 {t('inventory')}
               </Link>

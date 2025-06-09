@@ -11,6 +11,9 @@ export const en = {
   logout: "Log out",
   loading: "Loading...",
   loadingInventoryMessage: "Loading your inventory...",
+  profile: "Profile",
+  supportTickets: "Support Tickets",
+  profileAndTickets: "Profile and Tickets",
   
   // Language switcher
   polish: "Polish",
@@ -78,12 +81,14 @@ export const en = {
   calculatorDesc: "Check how much you can get for your CS2 skins",
   searchSkins: "Search skins...",
   allCategories: "All",
-  knives: "Knives",
-  rifles: "Rifles",
-  pistols: "Pistols",
-  smgs: "SMGs",
-  shotguns: "Shotguns",
-  snipers: "Snipers",
+  knife: "Knives",
+  rifle: "Rifles",
+  pistol: "Pistols",
+  smg: "SMGs",
+  heavy: "Heavy",
+  gloves: "Gloves",
+  shotgun: "Shotguns",
+  sniper: "Snipers",
   allWear: "All wear",
   factoryNew: "Factory New",
   minimalWear: "Minimal Wear",
@@ -91,7 +96,10 @@ export const en = {
   wellWorn: "Well-Worn",
   battleScarred: "Battle-Scarred",
   youWillReceive: "You will receive:",
-  noSkinsFound: "No skins found matching your search criteria.",
+  importantInfo: "IMPORTANT INFORMATION",
+  calculatorImageInfo: "Click on an item to view it on Steam. Log in to see higher quality item images.",
+  loginToSeeImages: "After logging in, all items will be visible in your inventory with their images.",
+  noSkinsFound: "No skins found matching your search criteria. Remember that only skins with a sale value of over 20 PLN are displayed here.",
   
   // Inventory
   yourInventory: "Your Inventory",
@@ -179,6 +187,121 @@ export const en = {
   recentlyUsed: "Recently Used",
   contactDetails: "Contact Details",
   
+  // Refund Policy
+  refundPolicyTitle: "Refund Policy - Skinowo.com",
+  effectiveDate: "Effective Date: May 30, 2025",
+  generalRefundPolicy: "1. General Refund Policy",
+  generalRefundText: "All transactions made on Skinowo.com are final and non-refundable. This includes the sale and purchase of skins and all other services provided through our website. By making a transaction, you confirm that you understand and accept that no refunds will be issued under any circumstances.",
+  nonRefundableItems: "2. Non-Refundable Items",
+  nonRefundableItemsDescription: "The following items are non-refundable:",
+  nonRefundableItemsList: [
+    "Deposits to wallet balance",
+    "Skins sold by users to Skinowo.com",
+    "Skins purchased through Skinowo.com (if service is offered)",
+    "Any service or platform fees, including appraisal, transaction, or commission fees"
+  ],
+  billingDiscrepancies: "3. Billing Discrepancies",
+  billingDiscrepanciesText: "If you believe you have been incorrectly charged for a transaction you did not make, you must notify our support team at support@skinowo.com within 30 days of the charge. Failure to do so will be considered an acceptance of the charge as valid and non-refundable.",
+  chargebacks: "4. Chargebacks",
+  chargebacksText: "If a chargeback is initiated on your account, Skinowo.com reserves the right to immediately suspend or terminate access and forfeit any remaining balance, items, or credits associated with your account. We fully cooperate with payment providers and appropriate authorities to investigate and dispute any fraudulent chargebacks.",
+  finalDecision: "5. Final Decision",
+  finalDecisionText: "All refund requests are subject to review by Skinowo.com. We reserve the right to approve or deny any refund request at our sole discretion. If a refund is approved, funds will be returned using the original method of payment.",
+  contactUsText: "If you have any questions or concerns regarding refunds, please contact our support team:",
+  backToHome: "Back to Home",
+  
+  // Terms of Service
+  termsTitle: "Terms of Service and Privacy Policy – skinowo.com",
+  termsEffectiveDate: "Effective Date: May 30, 2025",
+  
+  // Sections
+  termsGeneralProvisions: "1. General Provisions",
+  termsScopeOfServices: "2. Scope of Services",
+  termsLoginAndUserAccess: "3. Login and User Access",
+  termsPayoutMethods: "4. Payout Methods",
+  termsAvailabilityAndRestrictions: "5. Availability and Restrictions",
+  termsCustomerSupport: "6. Customer Support and Complaints",
+  termsPrivacyPolicy: "7. Privacy Policy and Data Protection (GDPR)",
+  termsCookies: "8. Cookies and Tracking Technologies",
+  termsFinalProvisions: "9. Final Provisions",
+  
+  // Section Content
+  termsGeneralProvisionsContent: [
+    "1.1 These Terms of Service apply to the website https://skinowo.com, operated by Skinowo.com, located at 810 Pony Express Rd, Cheyenne, WY 82009, hereinafter referred to as \"the Service\".",
+    "1.2 Contact with the Service is available via email: support@skinowo.com.",
+    "1.3 By accessing or using the Service, the user (\"User\") acknowledges that they have read, understood, and agree to be bound by these Terms of Service and Privacy Policy."
+  ],
+  
+  termsScopeOfServicesContent: [
+    "2.1 The Service allows Users to sell digital in-game items (\"skins\") from Counter-Strike 2 (CS2) in exchange for real-world currency.",
+    "2.2 The transaction process includes the following steps:",
+    "a. User logs in using their Steam account;",
+    "b. Selects items they wish to sell;",
+    "c. Chooses the preferred payout method;",
+    "d. Accepts the Steam trade offer;",
+    "e. Receives payout within 5 to 15 minutes depending on the payout method.",
+    "2.3 The minimum value of a transaction is 20 PLN / 5 USD.",
+    "2.4 Items are sold directly to Skinowo.com. The Service does not act as an intermediary between users."
+  ],
+  
+  termsLoginAndUserAccessContent: [
+    "3.1 The Service does not require registration. Access is granted via Steam login using the official OpenID protocol provided by Valve.",
+    "3.2 The Service does not store user passwords or Steam login credentials."
+  ],
+  
+  termsPayoutMethodsContent: [
+    "4.1 Users can receive payouts via:",
+    "a. Bank Transfer",
+    "b. PayPal",
+    "c. Skrill",
+    "d. Litecoin (LTC)",
+    "4.2 Payouts are processed within 5 to 15 minutes after the trade confirmation. In exceptional cases, this time may extend to 24 hours."
+  ],
+  
+  termsAvailabilityAndRestrictionsContent: [
+    "5.1 The Service is available worldwide with no geographic restrictions.",
+    "5.2 There are no age restrictions; however, minors should use the Service under parental or guardian supervision.",
+    "5.3 All transactions are compliant with Valve's Terms of Service. Selling your own items is legal and does not result in Steam account penalties.",
+    "5.4 Skinowo.com reserves the right to refuse a transaction at its sole discretion."
+  ],
+  
+  termsCustomerSupportContent: [
+    "6.1 Customer support is available 24/7, every day of the week.",
+    "6.2 Users may submit complaints via email to: support@skinowo.com.",
+    "6.3 Details of the complaint and refund process are available in the Refund Policy section of the website."
+  ],
+  
+  termsPrivacyPolicyContent: [
+    "7.1 The data controller is Skinowo.com.",
+    "7.2 The Service collects the following personal data:",
+    "a. Steam nickname",
+    "b. Email address (if voluntarily provided)",
+    "c. IP address",
+    "7.3 Data is processed to:",
+    "a. Improve service performance",
+    "b. Process transactions",
+    "c. Conduct anonymous statistics via Google Analytics",
+    "7.4 Data may be accessed only by the Service and authorized third parties (e.g., Google as a processor under analytics services).",
+    "7.5 Personal data is stored as long as necessary to fulfill its purpose or until the User requests its deletion.",
+    "7.6 Users have the right to:",
+    "a. Access their data",
+    "b. Correct their data",
+    "c. Request deletion of data",
+    "d. Object to processing",
+    "7.7 All data-related requests must be sent to: support@skinowo.com"
+  ],
+  
+  termsCookiesContent: [
+    "8.1 The Service uses cookies to improve functionality and collect traffic statistics.",
+    "8.2 Users can disable cookies at any time via their browser settings.",
+    "8.3 Continuing to use the site without disabling cookies implies consent to their use."
+  ],
+  
+  termsFinalProvisionsContent: [
+    "9.1 Skinowo.com reserves the right to modify these Terms at any time. Any changes will be posted on the website and take effect immediately upon publication.",
+    "9.2 Continued use of the Service after updates implies acceptance of the new terms.",
+    "9.3 In matters not regulated by these Terms, the applicable law is the law of the State of Wyoming, USA."
+  ],
+
   // FAQ Section
   faqSectionTitle: "Frequently Asked Questions",
   faqHowLongSelling: "How long does the skin selling process take?",
@@ -186,7 +309,7 @@ export const en = {
   faqPaymentMethods: "What payment methods do you accept?",
   faqPaymentMethodsAnswer: "We accept bank transfers, PayPal, Skrill, Neteller, Bitcoin, and other popular cryptocurrencies. We are constantly expanding the list of available payment methods to provide maximum convenience to our users.",
   faqTradeBan: "Can I sell skins with a trade ban?",
-  faqTradeBanAnswer: "Unfortunately, we cannot accept skins with an active trade ban. Items must be ready to trade at the time of making an offer. Trade bans are imposed by Steam and we cannot bypass them.",
+  faqTradeBanAnswer: "Unfortunately, we cannot accept skins with an active trade ban. Items must be ready for exchange at the time of placing the offer.",
   faqValueCalculation: "How do you calculate the value of skins?",
   faqValueCalculationAnswer: "The value of skins is calculated based on current market prices from the Steam Community Market and other popular trading platforms. We offer 70% of the market value, which is one of the best offers available on the market.",
   faqTransactionIssue: "What should I do if I have a problem with a transaction?",
@@ -246,9 +369,10 @@ export const en = {
   information: "Information",
   contact: "Contact",
   terms: "Terms of Service",
+  refundPolicy: "Refund Policy",
   privacyPolicy: "Privacy Policy",
   allRightsReserved: "All rights reserved.",
-  termsAndPrivacy: "Terms of Service | Privacy Policy",
+  termsAndPrivacy: "Terms | Privacy Policy",
   home: "Home",
   
   // Calculator - updated keys
@@ -286,7 +410,10 @@ export const en = {
     termsAgreement: "By logging in, you accept our",
     termsLink: "Terms of Service",
     privacyLink: "Privacy Policy",
-    and: "and"
+    and: "and",
+    redirecting: "Redirecting to login page...",
+    authenticating: "Authenticating...",
+    waiting: "Please wait while we log you in"
   },
 
   // FAQ
@@ -338,5 +465,19 @@ export const en = {
     
     question5: "Do you charge a commission on sales?",
     answer5: "Yes, we charge a small commission on each transaction to maintain our platform and provide the highest quality services. The exact amount of the commission is always clearly visible before finalizing the transaction, so there are no hidden fees."
+  },
+
+  // Trade History
+  tradeHistory: {
+    title: 'Trade History',
+    noTrades: 'No trade history found',
+    error: 'Failed to load trade history',
+    status: {
+      completed: 'Completed',
+      pending: 'Pending',
+      failed: 'Failed'
+    },
+    items: 'items',
+    item: 'item'
   }
 };

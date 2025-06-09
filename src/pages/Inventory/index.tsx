@@ -1,172 +1,148 @@
-import { useState, useEffect } from 'react';
-import { useLanguage } from '../../context/LanguageContext';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { ToastContainer, toast } from 'react-toastify';
+import { inventoryAPI, tradeHistoryAPI } from '../../services/api';
+import { toast, ToastContainer } from 'react-toastify';
+import { useLanguage } from '../../context/LanguageContext';
+
 import 'react-toastify/dist/ReactToastify.css';
 
-// Importy zdjęć skinów
-import ak47AsiimovImg from '/src/assets/karambit.png';
-import m4a4NeoNoirImg from '/src/assets/awp.png';
-import deagleBlazeImg from '/src/assets/karambit.png';
-
+// Define types
 interface SkinItem {
-  id: number;
+  id: string;
+  assetId: string;
   name: string;
-  marketPrice: number;
-  ourPrice: number;
-  rarity: Rarity;
-  image: string;
-  weaponType: string;
-  wear: string;
+  marketPrice: number | null;
+  ourPrice: number | null;
+  rarity: string;
+  image?: string;
+  weaponType?: string;
+  wear?: string;
+  statTrak?: boolean;
+  souvenir?: boolean;
+  tradable?: boolean;
+  marketable?: boolean;
 }
 
-type Rarity = 'common' | 'uncommon' | 'rare' | 'mythical' | 'legendary' | 'ancient';
-
-interface SaleHistoryItem {
-  id: number;
-  skinName: string;
-  price: number;
-  date: string;
-  paymentMethod: string;
-  status: 'completed' | 'pending' | 'failed';
+interface RarityColor {
+  bg: string;
+  text: string;
+  border: string;
 }
 
-const rarityColors: Record<Rarity, { bg: string, text: string, border: string }> = {
-  common: { bg: '#1a1a1a', text: '#cccccc', border: '#cccccc' },     // Gray
-  uncommon: { bg: '#162329', text: '#00aeff', border: '#00aeff' },    // Blue
-  rare: { bg: '#1b2b16', text: '#a2ff46', border: '#a2ff46' },        // Green
-  mythical: { bg: '#2b1616', text: '#ff4655', border: '#ff4655' },    // Red
-  legendary: { bg: '#261626', text: '#c800ff', border: '#c800ff' },   // Purple
-  ancient: { bg: '#262616', text: '#ffd700', border: '#ffd700' },     // Gold
+// Rarity colors mapping
+const rarityColors: Record<string, RarityColor> = {
+  Common: { bg: '#1a1a1a', text: '#cccccc', border: '#cccccc' },
+  Uncommon: { bg: '#162329', text: '#00aeff', border: '#00aeff' },
+  Rare: { bg: '#1b2b16', text: '#a2ff46', border: '#a2ff46' },
+  Mythical: { bg: '#2b1616', text: '#ff4655', border: '#ff4655' },
+  Legendary: { bg: '#261626', text: '#c800ff', border: '#c800ff' },
+  Ancient: { bg: '#262616', text: '#ffd700', border: '#ffd700' },
+  Default: { bg: '#1a1a1a', text: '#cccccc', border: '#cccccc' }
 };
 
-const Inventory = () => {
-  const { t } = useLanguage();
+const Inventory: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [inventory, setInventory] = useState<SkinItem[]>([]);
-  const [salesHistory, setSalesHistory] = useState<SaleHistoryItem[]>([]);
+  const [soldItems, setSoldItems] = useState<Set<string>>(new Set());
+  const [selectedSkins, setSelectedSkins] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedSkins, setSelectedSkins] = useState<number[]>([]);
-  const [isSelling, setIsSelling] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showSellModal, setShowSellModal] = useState(false);
+  const [isSelling, setIsSelling] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-
-  useEffect(() => {
-    // Symulacja ładowania danych z API
-    setTimeout(() => {
-      // Przykładowe dane skinów
-      const mockInventory: SkinItem[] = [
-        {
-          id: 1,
-          name: 'WATER ELEMENTAL (FT)',
-          marketPrice: 356.20,
-          ourPrice: 320.50,
-          rarity: 'mythical',
-          image: ak47AsiimovImg,
-          weaponType: 'Karambit',
-          wear: 'Field-Tested'
-        },
-        {
-          id: 2,
-          name: 'WATER ELEMENTAL (FT)',
-          marketPrice: 391.30,
-          ourPrice: 350.75,
-          rarity: 'uncommon',
-          image: m4a4NeoNoirImg,
-          weaponType: 'Karambit',
-          wear: 'Field-Tested'
-        },
-        {
-          id: 3,
-          name: 'WATER ELEMENTAL (FT)',
-          marketPrice: 254.50,
-          ourPrice: 220.00,
-          rarity: 'legendary',
-          image: deagleBlazeImg,
-          weaponType: 'Karambit',
-          wear: 'Field-Tested'
-        },
-        {
-          id: 4,
-          name: 'WATER ELEMENTAL (FT)',
-          marketPrice: 364.50,
-          ourPrice: 330.75,
-          rarity: 'uncommon',
-          image: m4a4NeoNoirImg,
-          weaponType: 'Karambit',
-          wear: 'Field-Tested'
-        },
-        {
-          id: 5,
-          name: 'WATER ELEMENTAL (FT)',
-          marketPrice: 384.50,
-          ourPrice: 350.00,
-          rarity: 'mythical',
-          image: deagleBlazeImg,
-          weaponType: 'Karambit',
-          wear: 'Field-Tested'
-        },
-        {
-          id: 6,
-          name: 'WATER ELEMENTAL (FT)',
-          marketPrice: 352.50,
-          ourPrice: 320.00,
-          rarity: 'ancient',
-          image: ak47AsiimovImg,
-          weaponType: 'Karambit',
-          wear: 'Field-Tested'
+  const [salesHistory, setSalesHistory] = useState<any[]>([]);
+  const [isCalculatorLoading, setIsCalculatorLoading] = useState(true);
+  
+  // Calculate total value of selected skins
+  const totalValue = selectedSkins.reduce((sum, assetId) => {
+    const skin = inventory.find(s => s.assetId === assetId);
+    return sum + (skin?.ourPrice ?? 0);
+  }, 0);
+  
+  // Fetch sales history
+  const fetchSalesHistory = useCallback(async () => {
+    try {
+      setIsHistoryLoading(true);
+      const response = await tradeHistoryAPI.getTradeHistory(50, 0);
+      
+      console.log('Sales history:', response);
+      setSalesHistory(response);
+      
+      // Extract sold item IDs from history
+      const soldItemIds = new Set<string>();
+      response.forEach((tx: any) => {
+        try {
+          const details = typeof tx.details === 'string' ? JSON.parse(tx.details) : tx.details;
+          if (details && Array.isArray(details.items)) {
+            details.items.forEach((item: any) => {
+              if (item.assetId) {
+                soldItemIds.add(item.assetId);
+              }
+            });
+          }
+        } catch (e) {
+          console.error('Error parsing transaction details:', e);
         }
-      ];
-
-      // Przykładowe dane historii sprzedaży
-      const mockSalesHistory: SaleHistoryItem[] = [
-        {
-          id: 101,
-          skinName: 'AWP | Wildfire',
-          price: 189.50,
-          date: '2023-05-15',
-          paymentMethod: 'PayPal',
-          status: 'completed'
-        },
-        {
-          id: 102,
-          skinName: 'Butterfly Knife | Fade',
-          price: 1250.00,
-          date: '2023-05-10',
-          paymentMethod: 'Bank Transfer',
-          status: 'completed'
-        }
-      ];
-
-      setInventory(mockInventory);
-      setSalesHistory(mockSalesHistory);
-      setIsLoading(false);
-    }, 1000);
+      });
+      setSoldItems(soldItemIds);
+    } catch (error) {
+      console.error('Error fetching sales history:', error);
+    } finally {
+      setIsHistoryLoading(false);
+    }
   }, []);
 
-  const handleRefresh = () => {
-    setIsLoading(true);
-    // Symulacja odświeżania danych
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-  };
-
-  const toggleSelectSkin = (skinId: number) => {
-    setSelectedSkins(prev => {
-      if (prev.includes(skinId)) {
-        return prev.filter(id => id !== skinId);
+  // Fetch inventory from the backend
+  const fetchInventory = useCallback(async () => {
+    if (!user?.steamId) return;
+    
+    try {
+      setIsCalculatorLoading(true);
+      setIsLoading(true);
+      setError(null);
+      
+      // Get current language from the language context
+      const lang = localStorage.getItem('i18nextLng') || 'pl';
+      const response = await inventoryAPI.getUserInventory(lang);
+      
+      if (response.success && response.inventory) {
+        setInventory(response.inventory);
       } else {
-        return [...prev, skinId];
+        throw new Error('Failed to load inventory');
       }
-    });
-  };
+    } catch (err) {
+      console.error('Error fetching inventory:', err);
+      setError('Nie udało się załadować ekwipunku. Spróbuj odświeżyć stronę.');
+      toast.error('Nie udało się załadować ekwipunku');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+      setIsCalculatorLoading(false);
+    }
+  }, [user?.steamId]);
 
-  const calculateTotalValue = () => {
-    return selectedSkins.reduce((total, skinId) => {
-      const skin = inventory.find(s => s.id === skinId);
-      return total + (skin ? skin.ourPrice : 0);
-    }, 0);
+  // Initial load
+  useEffect(() => {
+    const loadData = async () => {
+      await fetchInventory();
+      await fetchSalesHistory();
+    };
+    loadData();
+  }, [fetchInventory, fetchSalesHistory]);
+
+  // Toggle skin selection
+  const toggleSkinSelection = (assetId: string) => {
+    // Don't allow selection of sold items
+    if (soldItems.has(assetId)) return;
+    
+    setSelectedSkins(prev =>
+      prev.includes(assetId)
+        ? prev.filter(id => id !== assetId)
+        : [...prev, assetId]
+    );
   };
 
   // Funkcja powiadomień z react-toastify
@@ -198,6 +174,7 @@ const Inventory = () => {
     }
   };
 
+  // Handle copy trade link
   const handleCopyTradeLink = () => {
     const tradeLink = "https://steamcommunity.com/tradeoffer/new/?partner=123456789&token=abcdef";
     navigator.clipboard.writeText(tradeLink)
@@ -212,95 +189,154 @@ const Inventory = () => {
       });
   };
 
+  // Handle sell selected
   const handleSellSelected = () => {
-    if (selectedSkins.length === 0) {
-      showNotification(t('selectSkinsToSell') || 'Wybierz skiny do sprzedaży', 'warning');
-      return;
-    }
-
-    const totalValue = calculateTotalValue();
-    if (totalValue < 20) {
-      showNotification(t('minimumSellAmount') || 'Minimalna kwota sprzedaży to 20 zł', 'warning');
-      return;
-    }
-
-    // Pokaż modal potwierdzający sprzedaż
+    if (selectedSkins.length === 0) return;
     setShowSellModal(true);
   };
-  
-  const confirmSell = () => {
-    setIsSelling(true);
-    setShowSellModal(false);
+
+  // Handle confirm sell
+  const handleConfirmSell = async () => {
+    if (selectedSkins.length === 0) return;
     
-    // Symulacja procesu sprzedaży
-    setTimeout(() => {
-      // Logika sprzedaży skinów
-      console.log(`Sprzedaję skiny o ID: ${selectedSkins.join(', ')} za ${calculateTotalValue().toFixed(2)} zł`);
-      showNotification(t('sellSuccess') || 'Skiny zostały sprzedane pomyślnie!', 'success');
+    try {
+      setIsSelling(true);
       
-      // Dodanie do historii sprzedaży
-      const soldSkins = selectedSkins.map(id => inventory.find(skin => skin.id === id));
-      const currentDate = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/inventory/sell`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: selectedSkins.map(assetId => ({
+            assetId,
+            name: inventory.find(skin => skin.assetId === assetId)?.name || 'Unknown Item'
+          }))
+        })
+      });
       
-      // Jeśli sprzedajemy jeden skin
-      if (selectedSkins.length === 1) {
-        const skin = soldSkins[0];
-        if (skin) {
-          const newHistoryItem: SaleHistoryItem = {
-            id: Date.now(), // Unikalny ID bazowany na czasie
-            skinName: `${skin.weaponType} | ${skin.name}`,
-            price: skin.ourPrice,
-            date: currentDate,
-            paymentMethod: t('bankTransfer') || 'Przelew bankowy',
-            status: 'completed'
-          };
-          setSalesHistory(prev => [newHistoryItem, ...prev]);
-        }
-      } 
-      // Jeśli sprzedajemy wiele skinów
-      else {
-        const newHistoryItem: SaleHistoryItem = {
-          id: Date.now(), // Unikalny ID bazowany na czasie
-          skinName: `${t('multipleItems') || 'Wiele przedmiotów'} (${selectedSkins.length})`,
-          price: calculateTotalValue(),
-          date: currentDate,
-          paymentMethod: t('bankTransfer') || 'Przelew bankowy',
-          status: 'completed'
-        };
-        setSalesHistory(prev => [newHistoryItem, ...prev]);
+      if (!response.ok) {
+        throw new Error('Failed to sell items');
       }
       
-      // Usunięcie sprzedanych skinów z ekwipunku
-      setInventory(prev => prev.filter(skin => !selectedSkins.includes(skin.id)));
-      setSelectedSkins([]);
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success('Przedmioty zostały wystawione na sprzedaż');
+        setSelectedSkins([]);
+        await fetchInventory(); // Refresh the inventory
+        await fetchSalesHistory(); // Refresh sales history
+      } else {
+        throw new Error(data.message || 'Failed to sell items');
+      }
+    } catch (err) {
+      console.error('Error selling items:', err);
+      toast.error('Wystąpił błąd podczas sprzedaży przedmiotów');
+    } finally {
       setIsSelling(false);
-    }, 1500);
+      setShowSellModal(false);
+    }
   };
 
-  if (!user) {
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--btnColor)]"></div>
+      </div>
+    );
+  }
+
+  if (!user || !user.steamId) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-[var(--bgSecondary)] p-6 rounded-lg shadow-lg text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">{t('loginRequired')}</h2>
-          <p className="text-gray-300 mb-6">{t('loginToViewInventory')}</p>
+          <h2 className="text-2xl font-bold text-white mb-4">{t('loginRequired') || 'Wymagane logowanie'}</h2>
+          <p className="text-gray-300 mb-6">{t('loginToViewInventory') || 'Zaloguj się, aby zobaczyć swój ekwipunek'}</p>
           <a href="/login" className="inline-block bg-[var(--btnColor)] text-white px-6 py-3 rounded-lg font-medium hover:bg-[var(--btnHoverColor)] transition-colors">
-            {t('login')}
+            {t('login') || 'Zaloguj się'}
           </a>
         </div>
       </div>
     );
   }
-  
-  if (isLoading) {
+
+  if (error) {
     return (
-      <div className="container mx-auto py-16 px-4 flex justify-center items-center min-h-[50vh]">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--btnColor)]"></div>
-          <p className="mt-4 text-gray-400">{t('loadingInventoryMessage')}</p>
-        </div>
+      <div className="text-center py-12">
+        <p className="text-red-400 mb-4">{error}</p>
+        <button 
+          onClick={fetchInventory}
+          className="mt-4 bg-[var(--btnColor)] text-black px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
+          disabled={isRefreshing}
+        >
+          {isRefreshing ? 'Ładowanie...' : 'Spróbuj ponownie'}
+        </button>
       </div>
     );
   }
+
+  const salesHistoryData = isHistoryLoading ? (
+    <div className="flex justify-center py-12">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--btnColor)]"></div>
+    </div>
+  ) : salesHistory.length > 0 ? (
+    <div className="space-y-4">
+      {salesHistory.map((sale) => {
+        let details;
+        try {
+          details = typeof sale.details === 'string' ? JSON.parse(sale.details) : sale.details;
+        } catch (e) {
+          console.error('Error parsing sale details:', e);
+          details = { items: [] };
+        }
+        
+        return (
+          <div key={sale.id} className="bg-[var(--secondaryBgColor)] p-4 rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <div>
+                <p className="text-xs text-gray-400">ID: {sale.id}</p>
+                <p className="text-xs text-gray-500">{new Date(sale.createdAt).toLocaleString()}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-bold text-[var(--btnColor)]">{parseFloat(sale.amount).toFixed(2)} zł</p>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  sale.status === 'completed' ? 'bg-green-900/30 text-green-400' :
+                  sale.status === 'pending' ? 'bg-yellow-900/30 text-yellow-400' :
+                  'bg-red-900/30 text-red-400'
+                }`}>
+                  {sale.status === 'completed' ? 'Zakończono' :
+                   sale.status === 'pending' ? 'W toku' : 'Anulowano'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="mt-2 pt-2 border-t border-gray-800">
+              {Array.isArray(details?.items) && details.items.map((item: any, index: number) => (
+                <div key={index} className="flex justify-between items-center py-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-[#0f0f0f] rounded flex items-center justify-center">
+                      <img 
+                        src={inventory.find(skin => skin.assetId === item.assetId)?.image || '/placeholder-skin.png'} 
+                        alt={item.name} 
+                        className="w-6 h-6 object-contain" 
+                      />
+                    </div>
+                    <span className="text-sm text-gray-300">{item.name || 'Unknown Item'}</span>
+                  </div>
+                  <span className="text-sm font-medium">{parseFloat(item.ourPrice || 0).toFixed(2)} zł</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    <div className="text-center py-12">
+      <p className="text-gray-500">Brak historii transakcji</p>
+    </div>
+  );
 
   return (
     <div className="container mx-auto px-4 py-8 relative bg-[var(--secondaryBgColor)]">
@@ -342,20 +378,20 @@ const Inventory = () => {
                 <div className="flex items-center">
                   <div className="bg-[#0f0f0f] p-2 rounded-md mr-4 w-16 h-16 flex items-center justify-center">
                     <img 
-                      src={inventory.find(skin => skin.id === selectedSkins[0])?.image} 
+                      src={inventory.find(skin => skin.assetId === selectedSkins[0])?.image} 
                       alt="Skin" 
                       className="w-14 h-14 object-contain" 
                     />
                   </div>
                   <div>
                     <div className="font-bold text-white">
-                      {inventory.find(skin => skin.id === selectedSkins[0])?.weaponType} | {inventory.find(skin => skin.id === selectedSkins[0])?.name}
+                      {inventory.find(skin => skin.assetId === selectedSkins[0])?.weaponType} | {inventory.find(skin => skin.assetId === selectedSkins[0])?.name}
                     </div>
                     <div className="text-gray-400 text-sm">
-                      {inventory.find(skin => skin.id === selectedSkins[0])?.wear}
+                      {inventory.find(skin => skin.assetId === selectedSkins[0])?.wear}
                     </div>
                     <div className="text-[var(--btnColor)] font-bold mt-1">
-                      {inventory.find(skin => skin.id === selectedSkins[0])?.ourPrice.toFixed(2)} zł
+                      {(inventory.find(skin => skin.assetId === selectedSkins[0])?.ourPrice ?? 0).toFixed(2)} zł
                     </div>
                   </div>
                 </div>
@@ -369,7 +405,7 @@ const Inventory = () => {
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-gray-800 mt-2">
                     <span className="text-gray-400">{t('totalAmount') || 'Kwota łączna'}:</span>
-                    <span className="text-[var(--btnColor)] font-bold text-lg">{calculateTotalValue().toFixed(2)} zł</span>
+                    <span className="text-[var(--btnColor)] font-bold">{totalValue.toFixed(2)} zł</span>
                   </div>
                 </div>
               )}
@@ -449,7 +485,7 @@ const Inventory = () => {
                 {t('cancel') || 'Anuluj'}
               </button>
               <button 
-                onClick={confirmSell}
+                onClick={handleConfirmSell}
                 className="flex-1 py-3 ml-2 cursor-pointer bg-[var(--btnColor)] text-black font-medium hover:opacity-90 transition-opacity rounded-lg"
                 disabled={isSelling}
               >
@@ -469,6 +505,7 @@ const Inventory = () => {
           </div>
         </div>
       )}
+      
       {/* Nagłówek strony */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
@@ -476,7 +513,7 @@ const Inventory = () => {
           <p className="text-gray-400 text-sm max-w-lg">{t('inventoryDesc') || 'Tutaj znajdziesz wszystkie swoje przedmioty gotowe do sprzedaży'}</p>
         </div>
         <button 
-          onClick={handleRefresh}
+          onClick={fetchInventory}
           disabled={isLoading}
           className="flex items-center cursor-pointer gap-2 bg-[var(--btnColor)] text-black px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -510,21 +547,29 @@ const Inventory = () => {
             
             {selectedSkins.length > 0 && (
               <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full md:w-auto">
-                <div className="bg-[var(--bgColor)] px-4 py-2 rounded-lg flex items-center gap-3 w-full md:w-auto">
-                  <div className="flex flex-col">
-                    <span className="text-gray-400 text-xs">{t('selected') || 'Wybrano'}</span>
-                    <span className="text-white font-bold">{selectedSkins.length}</span>
-                  </div>
-                  <div className="w-px h-8 bg-gray-700"></div>
-                  <div className="flex flex-col">
-                    <span className="text-gray-400 text-xs">{t('total') || 'Suma'}</span>
-                    <span className="text-[var(--btnColor)] font-bold">{calculateTotalValue().toFixed(2)} zł</span>
-                  </div>
+                <div className="bg-[var(--bgColor)] px-4 py-2 rounded-lg flex items-center gap-3 w-full md:w-auto min-w-[200px]">
+                  {isCalculatorLoading ? (
+                    <div className="flex items-center justify-center w-full py-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[var(--btnColor)]"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-col">
+                        <span className="text-gray-400 text-xs">{t('selected') || 'Wybrano'}</span>
+                        <span className="text-white font-bold">{selectedSkins.length}</span>
+                      </div>
+                      <div className="w-px h-8 bg-gray-700"></div>
+                      <div className="flex flex-col">
+                        <span className="text-gray-400 text-xs">{t('total') || 'Suma'}</span>
+                        <span className="text-[var(--btnColor)] font-bold">{totalValue.toFixed(2)} zł</span>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <button 
                   onClick={handleSellSelected}
-                  disabled={isSelling || calculateTotalValue() < 20}
-                  className={`flex cursor-pointer items-center justify-center gap-2 ${calculateTotalValue() >= 20 ? 'bg-[var(--btnColor)] text-black' : 'bg-gray-800 text-gray-400'} px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto`}
+                  disabled={isSelling || totalValue < 0}
+                  className={`flex cursor-pointer items-center justify-center gap-2 ${totalValue >= 0 ? 'bg-[var(--btnColor)] text-black' : 'bg-gray-800 text-gray-400'} px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto`}
                 >
                   {isSelling ? (
                     <>
@@ -557,30 +602,49 @@ const Inventory = () => {
           <div className="p-6">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
               {inventory.map((skin) => {
-                const isSelected = selectedSkins.includes(skin.id);
+                const isSelected = selectedSkins.includes(skin.assetId);
                 const colors = rarityColors[skin.rarity];
                 
                 return (
                   <div 
                     key={skin.id} 
-                    onClick={() => toggleSelectSkin(skin.id)}
-                    className={`relative overflow-hidden rounded-xl group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${isSelected ? 'ring-2 ring-[var(--btnColor)]' : ''}`}
+                    onClick={() => toggleSkinSelection(skin.assetId)}
+                    className={`relative overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+                      isSelected ? 'ring-2 ring-[var(--btnColor)]' : ''
+                    } ${
+                      soldItems.has(skin.assetId) 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : 'cursor-pointer hover:shadow-[0_0_15px_var(--hover-shadow-color)]'
+                    }`}
                     style={{ 
                       border: `1px solid ${colors.border}55`, 
                       boxShadow: `0 0 0 rgba(0,0,0,0)`, 
                       '--hover-shadow-color': `${colors.border}30` 
                     } as React.CSSProperties}
                   >
-                    {/* Checkbox dla zaznaczenia */}
-                    <div className="absolute top-2 right-2 z-10">
-                      <div className={`w-5 h-5 rounded-full border ${isSelected ? 'bg-[var(--btnColor)] border-[var(--btnColor)]' : 'bg-gray-800/50 border-gray-600'} flex items-center justify-center`}>
-                        {isSelected && (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
+                    {/* Sold overlay */}
+                    {soldItems.has(skin.assetId) && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                        <span className="bg-red-900/80 text-white text-xs font-bold px-2 py-1 rounded">
+                          Sprzedano
+                        </span>
                       </div>
-                    </div>
+                    )}
+                    
+                    {/* Checkbox dla zaznaczenia */}
+                    {!soldItems.has(skin.assetId) && (
+                      <div className="absolute top-2 right-2 z-10">
+                        <div className={`w-5 h-5 rounded-full border ${
+                          isSelected ? 'bg-[var(--btnColor)] border-[var(--btnColor)]' : 'bg-gray-800/50 border-gray-600'
+                        } flex items-center justify-center`}>
+                          {isSelected && (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     
                     <div 
                       style={{ 
@@ -588,7 +652,7 @@ const Inventory = () => {
                       }} 
                       className="p-4 pb-8 h-full relative"
                     >
-                      <div className="absolute top-2 left-2 text-xs font-medium text-white">{skin.marketPrice.toFixed(2)} zł</div>
+                      <div className="absolute top-2 left-2 text-xs font-medium text-white">{skin.marketPrice ? skin.marketPrice.toFixed(2) : '0.00'} zł</div>
                       
                       <div className="flex justify-center items-center h-32 mt-4 py-20">
                         <img 
@@ -618,7 +682,7 @@ const Inventory = () => {
                     {/* Przycisk sprzedaży */}
                     <div className={`absolute bottom-0 left-0 right-0 bg-[var(--btnColor)] text-black text-center py-1 px-2 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ${isSelected ? 'translate-y-0' : ''}`}>
                       <div className="text-xs font-bold uppercase">
-                        {t('sellFor')} {skin.ourPrice.toFixed(2)} zł
+                        {t('sellFor')} {skin.ourPrice ? skin.ourPrice.toFixed(2) : '0.00'} zł
                       </div>
                     </div>
                   </div>
@@ -629,89 +693,17 @@ const Inventory = () => {
         )}
       </div>
 
-      {/* Historia sprzedaży */}
-      <div className="bg-[var(--bgColor)] rounded-lg shadow-lg">
+      {/* Sales History */}
+      <div className="bg-[var(--bgColor)] rounded-lg shadow-lg mt-8">
         <div className="border-b border-gray-800 p-6">
           <div>
             <h2 className="text-2xl font-bold text-white">{t('salesHistory') || 'Historia sprzedaży'}</h2>
-            <p className="text-gray-500 text-sm mt-1">{t('salesHistoryDesc')}</p>
+            <p className="text-gray-500 text-sm mt-1">{t('salesHistoryDesc') || 'Historia Twoich transakcji'}</p>
           </div>
         </div>
-        
-        {salesHistory.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <div className="bg-[var(--bgColor)] p-8 rounded-2xl mb-4 shadow-inner">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <h3 className="text-gray-300 text-xl font-medium mb-2">{t('noSalesHistory') || 'Nie masz jeszcze historii sprzedaży'}</h3>
-            <p className="text-gray-500 text-sm max-w-md text-center">{t('noSalesHistoryDesc') || 'Twoja historia sprzedaży pojawi się tutaj po sprzedaniu pierwszego przedmiotu.'}</p>
-          </div>
-        ) : (
-          <div className="p-6">
-            {/* Widok tabeli na desktopie */}
-            <div className="hidden md:block overflow-x-auto rounded-lg">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-[var(--bgColor)] text-left">
-                    <th className="px-4 py-3 text-sm font-medium rounded-tl-lg">{t('item') || 'Przedmiot'}</th>
-                    <th className="px-4 py-3 text-sm font-medium">{t('price') || 'Cena'}</th>
-                    <th className="px-4 py-3 text-sm font-medium">{t('date') || 'Data'}</th>
-                    <th className="px-4 py-3 text-sm font-medium">{t('paymentMethod') || 'Metoda płatności'}</th>
-                    <th className="px-4 py-3 text-sm font-medium rounded-tr-lg">{t('status') || 'Status'}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {salesHistory.map((item, index) => (
-                    <tr 
-                      key={item.id} 
-                      className={`hover:bg-[var(--bgColor)]/70 transition-colors ${index === salesHistory.length - 1 ? 'border-b-0' : 'border-b border-gray-800'}`}
-                    >
-                      <td className="px-4 py-4">{item.skinName}</td>
-                      <td className="px-4 py-4 font-medium">{item.price.toFixed(2)} zł</td>
-                      <td className="px-4 py-4 text-gray-400">{item.date}</td>
-                      <td className="px-4 py-4">{item.paymentMethod}</td>
-                      <td className="px-4 py-4">
-                        <span 
-                          className={`px-3 py-1 text-xs rounded-full ${item.status === 'completed' ? 'bg-green-900/30 text-green-400' : item.status === 'pending' ? 'bg-yellow-900/30 text-yellow-400' : 'bg-red-900/30 text-red-400'}`}
-                        >
-                          {t(item.status) || (item.status === 'completed' ? 'Zakończona' : item.status === 'pending' ? 'Oczekująca' : 'Anulowana')}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            
-            {/* Widok kart na urządzeniach mobilnych */}
-            <div className="grid grid-cols-1 gap-4 md:hidden">
-              {salesHistory.map((item) => (
-                <div key={item.id} className="bg-[var(--bgColor)] p-4 rounded-lg shadow-md">
-                  <div className="flex justify-between items-start mb-3 pb-2 border-b border-gray-800">
-                    <div className="font-medium text-white">{item.skinName}</div>
-                    <span 
-                      className={`px-3 py-1 text-xs rounded-full ${item.status === 'completed' ? 'bg-green-900/30 text-green-400' : item.status === 'pending' ? 'bg-yellow-900/30 text-yellow-400' : 'bg-red-900/30 text-red-400'}`}
-                    >
-                      {t(item.status) || (item.status === 'completed' ? 'Zakończona' : item.status === 'pending' ? 'Oczekująca' : 'Anulowana')}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="text-gray-400">{t('price') || 'Cena'}:</div>
-                    <div className="text-[var(--btnColor)] font-medium text-right">{item.price.toFixed(2)} zł</div>
-                    
-                    <div className="text-gray-400">{t('date') || 'Data'}:</div>
-                    <div className="text-gray-300 text-right">{item.date}</div>
-                    
-                    <div className="text-gray-400">{t('paymentMethod') || 'Metoda płatności'}:</div>
-                    <div className="text-gray-300 text-right">{item.paymentMethod}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="p-6">
+          {salesHistoryData}
+        </div>
       </div>
     </div>
   );

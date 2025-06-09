@@ -1,23 +1,29 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useLanguage } from '../../context/LanguageContext';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { adminAPI } from '../../services/adminAPI';
+import { toast } from 'react-toastify';
 
 interface UserDetails {
-  _id: string;
+  id: number;
   steamId: string;
-  username: string;
-  avatarUrl: string;
-  registrationDate: string;
-  lastLogin: string;
-  tradeUrl: string;
+  displayName: string;
+  avatarUrl?: string;
   email?: string;
+  balance: number;
+  isVerified: boolean;
+  isAdmin: boolean;
+  tradeUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lastLogin?: string | null;
+  transactionCount: number;
   transactions: Transaction[];
   tickets: Ticket[];
-  recentSteamIds: string[];
+  recentSteamIds?: string[];
 }
 
 interface Transaction {
-  _id: string;
+  id: number;  // Zmienione z _id na id po migracji do SQL
   totalAmount: number;
   status: 'pending' | 'completed' | 'failed';
   createdAt: string;
@@ -27,7 +33,7 @@ interface Transaction {
 }
 
 interface Ticket {
-  _id: string;
+  id: number;  // Zmienione z _id na id po migracji do SQL
   subject: string;
   status: 'open' | 'closed';
   createdAt: string;
@@ -36,64 +42,69 @@ interface Ticket {
 
 const UserDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const { t } = useLanguage();
+  const navigate = useNavigate();
   const [user, setUser] = useState<UserDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'profile' | 'transactions' | 'tickets'>('profile');
+  
+  const transactions = user?.transactions || [];
+  const tickets = user?.tickets || [];
+  const recentSteamIds = user?.recentSteamIds || [];
+  
+  // Obliczanie statystyk
+  const completedTransactions = transactions.filter(tx => tx?.status === 'completed').length;
+  const pendingTransactions = transactions.filter(tx => tx?.status === 'pending').length;
+  const totalSpent = transactions.reduce((sum, tx) => 
+    tx?.status === 'completed' ? sum + (tx?.totalAmount || 0) : sum, 0);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
+      if (!id) return;
+      
       setIsLoading(true);
       try {
-        // In a real implementation, this would be an API call
-        // For now, we'll simulate it with a timeout and mock data
-        setTimeout(() => {
-          const mockUser: UserDetails = {
-            _id: id || 'user1',
-            steamId: '76561198123456789',
-            username: 'SteamUser123',
-            avatarUrl: 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg',
-            registrationDate: new Date(Date.now() - 5000000000).toISOString(),
-            lastLogin: new Date(Date.now() - 86400000).toISOString(),
-            tradeUrl: 'https://steamcommunity.com/tradeoffer/new/?partner=123456&token=abcdef',
-            email: 'user@example.com',
-            recentSteamIds: ['76561198123456789', '76561198987654321'],
-            transactions: Array.from({ length: 5 }, (_, i) => ({
-              _id: `transaction${i + 1}`,
-              totalAmount: Math.random() * 1000,
-              status: ['pending', 'completed', 'failed'][Math.floor(Math.random() * 3)] as 'pending' | 'completed' | 'failed',
-              createdAt: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-              completedAt: Math.random() > 0.3 ? new Date(Date.now() - Math.random() * 5000000000).toISOString() : undefined,
-              paymentMethod: ['bank', 'paypal', 'skrill', 'crypto'][Math.floor(Math.random() * 4)],
-              itemsCount: Math.floor(Math.random() * 5) + 1
-            })),
-            tickets: Array.from({ length: 3 }, (_, i) => ({
-              _id: `ticket${i + 1}`,
-              subject: ['Problem z płatnością', 'Nie otrzymałem pieniędzy', 'Jak zmienić metodę płatności?'][i],
-              status: Math.random() > 0.5 ? 'open' : 'closed',
-              createdAt: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-              updatedAt: new Date(Date.now() - Math.random() * 5000000000).toISOString()
-            }))
-          };
-          
-          setUser(mockUser);
-          setIsLoading(false);
-        }, 1000);
-      } catch (err) {
-        console.error('Error fetching user details:', err);
+        // Pobierz dane użytkownika
+        const userResponse = await adminAPI.getUser(id);
+        if (!userResponse.success || !userResponse.user) {
+          throw new Error('Nie udało się załadować danych użytkownika');
+        }
+        
+        // Pobierz zgłoszenia użytkownika
+        const tickets = await adminAPI.getUserTickets(id);
+        
+        // Sprawdź, czy tickets to tablica, jeśli nie, użyj pustej tablicy
+        const userTickets = Array.isArray(tickets) ? tickets : [];
+        
+        // Zaktualizuj stan użytkownika z pobranymi danymi
+        setUser({
+          ...userResponse.user,
+          tickets: userTickets
+        });
+        
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+        toast.error(error instanceof Error ? error.message : 'Wystąpił błąd podczas ładowania danych użytkownika');
+        navigate('/admin/users');
+      } finally {
         setIsLoading(false);
       }
     };
 
     fetchUserDetails();
-  }, [id]);
+  }, [id, navigate]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return 'Brak danych';
+    try {
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? 'Błędna data' : date.toLocaleString('pl-PL');
+    } catch (e) {
+      console.error('Błąd formatowania daty:', e);
+      return 'Błędna data';
+    }
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('pl-PL', {
       style: 'currency',
       currency: 'PLN',
@@ -101,9 +112,22 @@ const UserDetails = () => {
     }).format(amount);
   };
 
+  const getStatusBadge = (status: 'pending' | 'completed' | 'failed') => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-500/20 text-yellow-500';
+      case 'completed':
+        return 'bg-green-500/20 text-green-500';
+      case 'failed':
+        return 'bg-red-500/20 text-red-500';
+      default:
+        return 'bg-gray-500/20 text-gray-500';
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--btnColor)]"></div>
       </div>
     );
@@ -111,12 +135,8 @@ const UserDetails = () => {
 
   if (!user) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-xl font-semibold">Użytkownik nie znaleziony</h2>
-        <p className="mt-2 text-gray-400">Nie znaleziono użytkownika o podanym ID.</p>
-        <Link to="/admin/users" className="mt-4 inline-block bg-[var(--btnColor)] text-black px-4 py-2 rounded-lg">
-          Powrót do listy użytkowników
-        </Link>
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-600">Nie znaleziono użytkownika</p>
       </div>
     );
   }
@@ -136,23 +156,27 @@ const UserDetails = () => {
       <div className="bg-[var(--secondaryBgColor)] rounded-xl p-6 border border-gray-800">
         <div className="flex flex-col md:flex-row md:items-center gap-6">
           <img 
-            src={user.avatarUrl} 
-            alt={user.username} 
-            className="w-24 h-24 rounded-full border-4 border-gray-700"
+            src={user.avatarUrl || 'https://via.placeholder.com/150'} 
+            alt={`${user.displayName}'s avatar`} 
+            className="w-24 h-24 rounded-full border-4 border-white shadow-lg"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = 'https://via.placeholder.com/150';
+            }}
           />
           <div className="flex-1">
-            <h2 className="text-xl font-bold">{user.username}</h2>
-            <p className="text-gray-400 text-sm">Steam ID: {user.steamId}</p>
+            <h1 className="text-2xl font-bold text-white">{user.displayName}</h1>
+            <p className="text-gray-300">Steam ID: {user.steamId || 'Brak danych'}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <span className="px-2 py-1 bg-blue-500/20 text-blue-500 rounded-full text-xs">
-                Użytkownik
+                {user.isAdmin ? 'Administrator' : 'Użytkownik'}
               </span>
-              {user.transactions.some(t => t.status === 'completed') && (
+              {user.transactions?.some(t => t?.status === 'completed') && (
                 <span className="px-2 py-1 bg-green-500/20 text-green-500 rounded-full text-xs">
                   Aktywny klient
                 </span>
               )}
-              {user.transactions.length > 5 && (
+              {user.transactions && user.transactions.length > 5 && (
                 <span className="px-2 py-1 bg-purple-500/20 text-purple-500 rounded-full text-xs">
                   Stały klient
                 </span>
@@ -160,17 +184,19 @@ const UserDetails = () => {
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            <p className="text-sm">
-              <span className="text-gray-400">Dołączył: </span>
-              <span>{formatDate(user.registrationDate)}</span>
-            </p>
-            <p className="text-sm">
-              <span className="text-gray-400">Ostatnie logowanie: </span>
-              <span>{formatDate(user.lastLogin)}</span>
-            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Data rejestracji</h3>
+                <p className="mt-1 text-sm text-gray-900">{formatDate(user.createdAt)}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Ostatnie logowanie</h3>
+                <p className="mt-1 text-sm text-gray-900">{formatDate(user.lastLogin)}</p>
+              </div>
+            </div>
             <p className="text-sm">
               <span className="text-gray-400">Transakcje: </span>
-              <span>{user.transactions.length}</span>
+              <span>{transactions.length}</span>
             </p>
           </div>
         </div>
@@ -182,7 +208,7 @@ const UserDetails = () => {
           <button
             onClick={() => setActiveTab('profile')}
             className={`py-4 px-1 text-sm font-medium border-b-2 ${
-              activeTab === 'profile'
+              activeTab === 'profile' ? true : false
                 ? 'border-[var(--btnColor)] text-[var(--btnColor)]'
                 : 'border-transparent text-gray-400 hover:text-white'
             }`}
@@ -197,17 +223,17 @@ const UserDetails = () => {
                 : 'border-transparent text-gray-400 hover:text-white'
             }`}
           >
-            Transakcje ({user.transactions.length})
+            Transakcje ({transactions.length})
           </button>
           <button
             onClick={() => setActiveTab('tickets')}
             className={`py-4 px-1 text-sm font-medium border-b-2 ${
-              activeTab === 'tickets'
+              activeTab === 'tickets' ? true : false
                 ? 'border-[var(--btnColor)] text-[var(--btnColor)]'
                 : 'border-transparent text-gray-400 hover:text-white'
             }`}
           >
-            Zgłoszenia ({user.tickets.length})
+            Zgłoszenia ({tickets.length})
           </button>
         </nav>
       </div>
@@ -222,19 +248,22 @@ const UserDetails = () => {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-gray-400">Nazwa użytkownika</p>
-                  <p>{user.username}</p>
+                  <p>{user.displayName}</p>
                 </div>
+              </div>
+              
+              <div className="space-y-4">
                 <div>
                   <p className="text-sm text-gray-400">Steam ID</p>
                   <p>{user.steamId}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Email</p>
-                  <p>{user.email || 'Nie podano'}</p>
+                  <p>{user.email ?? 'Brak'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Data rejestracji</p>
-                  <p>{formatDate(user.registrationDate)}</p>
+                  <p>{formatDate(user.createdAt)}</p>
                 </div>
               </div>
               
@@ -244,29 +273,46 @@ const UserDetails = () => {
                   <p>{formatDate(user.lastLogin)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Trade URL</p>
-                  <p className="truncate">
-                    <a 
-                      href={user.tradeUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-[var(--btnColor)] hover:underline"
-                    >
-                      {user.tradeUrl}
-                    </a>
+                  <p className="text-sm text-gray-400">Link do wymiany</p>
+                  <p className="text-sm text-blue-400 break-all">
+                    {user.tradeUrl ? (
+                      <a href={user.tradeUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                        {user.tradeUrl}
+                      </a>
+                    ) : 'Brak'}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-400">Poprzednie Steam ID</p>
-                  <div className="mt-1">
-                    {user.recentSteamIds.length > 0 ? (
-                      user.recentSteamIds.map((steamId, index) => (
-                        <p key={index} className="text-sm">{steamId}</p>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-400">Brak poprzednich Steam ID</p>
-                    )}
+              </div>
+              
+              {recentSteamIds.length > 0 && (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-400">Poprzednie Steam ID</p>
+                    <div className="space-y-1">
+                      {recentSteamIds.slice(0, 3).map((steamId, index) => (
+                        <p key={index} className="text-sm font-mono">{steamId}</p>
+                      ))}
+                    </div>
                   </div>
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-400">Liczba transakcji</p>
+                  <p className="text-white">{transactions.length}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Zakończone transakcje</p>
+                  <p className="text-white">{completedTransactions}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Oczekujące transakcje</p>
+                  <p className="text-white">{pendingTransactions}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Wydana kwota</p>
+                  <p className="text-white">{formatCurrency(totalSpent)}</p>
                 </div>
               </div>
             </div>
@@ -288,38 +334,36 @@ const UserDetails = () => {
                 </tr>
               </thead>
               <tbody>
-                {user.transactions.map((transaction) => (
-                  <tr key={transaction._id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="px-6 py-4 text-sm">#{transaction._id}</td>
-                    <td className="px-6 py-4 text-sm">{formatDate(transaction.createdAt)}</td>
-                    <td className="px-6 py-4 text-sm font-medium">{formatCurrency(transaction.totalAmount)}</td>
-                    <td className="px-6 py-4 text-sm capitalize">{transaction.paymentMethod}</td>
-                    <td className="px-6 py-4 text-sm">{transaction.itemsCount}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        transaction.status === 'completed' 
-                          ? 'bg-green-500/20 text-green-500' 
-                          : transaction.status === 'pending'
-                          ? 'bg-amber-500/20 text-amber-500'
-                          : 'bg-red-500/20 text-red-500'
-                      }`}>
-                        {transaction.status === 'completed' 
-                          ? 'Zakończona' 
-                          : transaction.status === 'pending'
-                          ? 'Oczekująca'
-                          : 'Anulowana'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <Link 
-                        to={`/admin/transactions/${transaction._id}`}
-                        className="text-[var(--btnColor)] hover:underline"
-                      >
-                        Szczegóły
-                      </Link>
+                {user.transactions?.length > 0 ? (
+                  user.transactions.map((transaction) => (
+                    <tr key={transaction.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                      <td className="px-6 py-4 text-sm">#{transaction.id}</td>
+                      <td className="px-6 py-4 text-sm">{formatDate(transaction.createdAt)}</td>
+                      <td className="px-6 py-4 text-sm font-medium">{formatCurrency(transaction.totalAmount)}</td>
+                      <td className="px-6 py-4 text-sm capitalize">{transaction.paymentMethod}</td>
+                      <td className="px-6 py-4 text-sm">{transaction.itemsCount}</td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadge(transaction.status)}`}>
+                          {transaction.status === 'completed' ? 'Zakończona' : transaction.status === 'pending' ? 'Oczekująca' : 'Anulowana'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <Link 
+                          to={`/admin/transactions/${transaction.id}`}
+                          className="text-[var(--btnColor)] hover:underline"
+                        >
+                          Szczegóły
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-4 text-center text-gray-400">
+                      Brak transakcji
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -339,31 +383,42 @@ const UserDetails = () => {
                 </tr>
               </thead>
               <tbody>
-                {user.tickets.map((ticket) => (
-                  <tr key={ticket._id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="px-6 py-4 text-sm">#{ticket._id}</td>
-                    <td className="px-6 py-4 text-sm">{ticket.subject}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        ticket.status === 'open' 
-                          ? 'bg-green-500/20 text-green-500' 
-                          : 'bg-gray-500/20 text-gray-500'
-                      }`}>
-                        {ticket.status === 'open' ? 'Otwarte' : 'Zamknięte'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm">{formatDate(ticket.createdAt)}</td>
-                    <td className="px-6 py-4 text-sm">{formatDate(ticket.updatedAt)}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <Link 
-                        to={`/admin/tickets/${ticket._id}`}
-                        className="text-[var(--btnColor)] hover:underline"
-                      >
-                        {ticket.status === 'open' ? 'Odpowiedz' : 'Zobacz'}
-                      </Link>
+                {user.tickets?.length > 0 ? (
+                  user.tickets.map((ticket, index) => (
+                    <tr 
+                      key={ticket.id ? `ticket-${ticket.id}` : `ticket-${index}`} 
+                      className="border-b border-gray-800 hover:bg-gray-800/30"
+                    >
+                      <td className="px-6 py-4 text-sm">#{ticket.id}</td>
+                      <td className="px-6 py-4 text-sm">{ticket.subject}</td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          ticket.status === 'open' 
+                            ? 'bg-green-500/20 text-green-500' 
+                            : 'bg-gray-500/20 text-gray-500'
+                        }`}>
+                          {ticket.status === 'open' ? 'Otwarte' : 'Zamknięte'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm">{formatDate(ticket.createdAt)}</td>
+                      <td className="px-6 py-4 text-sm">{formatDate(ticket.updatedAt)}</td>
+                      <td className="px-6 py-4 text-sm">
+                        <Link 
+                          to={`/admin/tickets/${ticket.id}`}
+                          className="text-[var(--btnColor)] hover:underline"
+                        >
+                          {ticket.status === 'open' ? 'Odpowiedz' : 'Zobacz'}
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center text-gray-400">
+                      Brak zgłoszeń
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

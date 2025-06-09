@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { adminAPI } from '../../services/adminAPI';
+import { toast } from 'react-toastify';
 
 interface User {
-  _id: string;
+  id: number;
   steamId: string;
-  username: string;
+  email: string;
+  displayName: string;
   avatarUrl: string;
-  registrationDate: string;
-  lastLogin: string;
-  tradeUrl: string;
-  transactionsCount: number;
+  balance: number;
+  isVerified: boolean;
+  isAdmin: boolean;
+  tradeUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastLogin?: string;
+  transactionCount: number;
 }
 
 const Users = () => {
@@ -19,49 +26,69 @@ const Users = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
+  const limit = 20;
 
-  // Fetch users on component mount and when page changes
+  // Fetch users on component mount and when page/search changes
   useEffect(() => {
     const fetchUsers = async () => {
       setIsLoading(true);
       try {
-        // In a real implementation, this would be an API call
-        // For now, we'll simulate it with a timeout and mock data
-        setTimeout(() => {
-          const mockUsers: User[] = Array.from({ length: 20 }, (_, i) => ({
-            _id: `user${i + 1 + (currentPage - 1) * 20}`,
-            steamId: `7656119812345${i + 1 + (currentPage - 1) * 20}`,
-            username: `SteamUser${i + 1 + (currentPage - 1) * 20}`,
-            avatarUrl: 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg',
-            registrationDate: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-            lastLogin: new Date(Date.now() - Math.random() * 1000000000).toISOString(),
-            tradeUrl: `https://steamcommunity.com/tradeoffer/new/?partner=12345${i + 1}&token=abcdef`,
-            transactionsCount: Math.floor(Math.random() * 10)
-          }));
-          
-          setUsers(mockUsers);
-          setTotalPages(5); // Mock total pages
-          setTotalUsers(100); // Mock total users
-          setIsLoading(false);
-        }, 1000);
-      } catch (err) {
-        console.error('Error fetching users:', err);
+        const response = await adminAPI.getUsers(
+          currentPage, 
+          limit, 
+          searchTerm
+        );
+
+        console.log(response);
+        
+        // Check if response has data and pagination info
+        if (response && response.users && response.pagination) {
+          setUsers(response.users);
+          setTotalPages(response.pagination.pages || 1);
+          setTotalUsers(response.pagination.total || 0);
+        } else if (Array.isArray(response)) {
+          // Fallback for array response
+          setUsers(response);
+        } else {
+          console.error('Unexpected response format:', response);
+          setUsers([]);
+          setTotalPages(1);
+          setTotalUsers(Array.isArray(response) ? response.length : 0);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        toast.error('Wystąpił błąd podczas pobierania użytkowników');
+        setUsers([]);
+      } finally {
         setIsLoading(false);
       }
     };
 
-    fetchUsers();
-  }, [currentPage]);
+    // Add a small delay for search to prevent too many requests
+    const timer = setTimeout(() => {
+      fetchUsers();
+    }, 500);
 
-  // Filter users based on search term
-  const filteredUsers = users.filter(user => 
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.steamId.includes(searchTerm)
-  );
+    return () => clearTimeout(timer);
+  }, [currentPage, searchTerm]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Nigdy';
+    return new Date(dateString).toLocaleString('pl-PL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatBalance = (balance: number) => {
+    return new Intl.NumberFormat('pl-PL', {
+      style: 'currency',
+      currency: 'PLN',
+      minimumFractionDigits: 2
+    }).format(balance);
   };
 
   return (
@@ -94,34 +121,71 @@ const Users = () => {
               <table className="w-full">
                 <thead>
                   <tr className="text-left text-gray-400 text-sm border-b border-gray-800 bg-gray-800/30">
-                    <th className="px-6 py-3 font-medium">Użytkownik</th>
-                    <th className="px-6 py-3 font-medium">Steam ID</th>
-                    <th className="px-6 py-3 font-medium">Data rejestracji</th>
-                    <th className="px-6 py-3 font-medium">Ostatnie logowanie</th>
-                    <th className="px-6 py-3 font-medium">Transakcje</th>
+                    <th className="px-6 py-3 font-medium text-left">Użytkownik</th>
+                    <th className="px-6 py-3 font-medium text-left">Email</th>
+                    <th className="px-6 py-3 font-medium text-right">Saldo</th>
+                    <th className="px-6 py-3 font-medium text-center">Data rejestracji</th>
+                    <th className="px-6 py-3 font-medium text-center">Ostatnie logowanie</th>
+                    <th className="px-6 py-3 font-medium text-center">Transakcje</th>
+                    <th className="px-6 py-3 font-medium text-center">Status</th>
                     <th className="px-6 py-3 font-medium">Akcje</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user) => (
-                    <tr key={user._id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                  {users.map((user) => (
+                    <tr key={user.id} className="border-b border-gray-800 hover:bg-gray-800/30">
                       <td className="px-6 py-4">
-                        <div className="flex items-center space-x-3">
+                        <Link to={`/admin/users/${user.id}`} className="flex items-center space-x-3 group">
                           <img 
-                            src={user.avatarUrl} 
-                            alt={user.username} 
-                            className="w-8 h-8 rounded-full"
+                            src={user.avatarUrl || '/default-avatar.png'} 
+                            alt={user.displayName} 
+                            className="w-10 h-10 rounded-full"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/default-avatar.png';
+                            }}
                           />
-                          <span>{user.username}</span>
-                        </div>
+                          <div className="flex flex-col">
+                            <span className="text-white group-hover:text-[var(--btnColor)] transition-colors">
+                              {user.displayName}
+                            </span>
+                            <span className="text-xs text-gray-400">ID: {user.id}</span>
+                          </div>
+                        </Link>
                       </td>
-                      <td className="px-6 py-4 text-sm">{user.steamId}</td>
-                      <td className="px-6 py-4 text-sm">{formatDate(user.registrationDate)}</td>
-                      <td className="px-6 py-4 text-sm">{formatDate(user.lastLogin)}</td>
-                      <td className="px-6 py-4 text-sm">{user.transactionsCount}</td>
-                      <td className="px-6 py-4 text-sm">
+                      <td className="px-6 py-4 text-gray-300">
+                        <div className="text-sm">{user.email}</div>
+                        <div className="text-xs text-gray-500">{user.steamId}</div>
+                      </td>
+                      <td className="px-6 py-4 text-right font-mono">
+                        {formatBalance(user.balance)}
+                      </td>
+                      <td className="px-6 py-4 text-center text-sm text-gray-400">
+                        {formatDate(user.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 text-center text-sm text-gray-400">
+                        {formatDate(user.lastLogin)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="px-3 py-1 text-xs rounded-full bg-blue-900/50 text-blue-300">
+                          {user.transactionCount} transakcji
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {user.isAdmin && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-purple-900/50 text-purple-300">
+                            Admin
+                          </span>
+                        )}
+                        {user.isVerified && !user.isAdmin && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-green-900/50 text-green-300">
+                            Zweryfikowany
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
                         <Link 
-                          to={`/admin/users/${user._id}`}
+                          to={`/admin/users/${user.id}`}
                           className="text-[var(--btnColor)] hover:underline mr-4"
                         >
                           Szczegóły

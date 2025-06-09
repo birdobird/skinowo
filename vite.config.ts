@@ -8,4 +8,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    port: 3001,
+    proxy: {
+      '/api': {
+        target: 'https://api.skinowo.com/api',
+        changeOrigin: true,
+      }
+    }
+  }
 })

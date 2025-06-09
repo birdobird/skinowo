@@ -11,6 +11,9 @@ export const pl = {
   logout: "Wyloguj się",
   loading: "Ładowanie danych...",
   loadingInventoryMessage: "Ładowanie twojego ekwipunku...",
+  profile: "Profil",
+  supportTickets: "Zgłoszenia",
+  profileAndTickets: 'Profil i zgłoszenia',
   
   // Przełącznik języka
   polish: "Polski",
@@ -74,24 +77,29 @@ export const pl = {
   },
   
   // Calculator
-  calculatorTitle: "Kalkulator wyceny skinów",
-  calculatorDesc: "Sprawdź, ile możesz otrzymać za swoje skiny CS2",
-  searchSkins: "Szukaj skinów...",
+  calculatorTitle: "Kalkulator Wartości Skinów",
+  calculatorDesc: "Sprawdź ile możesz dostać za swoje skiny z CS2",
+  searchSkins: "Wyszukaj skiny...",
   allCategories: "Wszystkie",
-  knives: "Noże",
-  rifles: "Karabiny",
-  pistols: "Pistolety",
-  smgs: "SMG",
+  knife: "Noże",
+  rifle: "Karabiny",
+  pistol: "Pistolety",
+  smg: "Pistolety maszynowe",
+  heavy: "Ciężkie",
+  gloves: "Rękawiczki",
   shotguns: "Strzelby",
   snipers: "Snajperki",
   allWear: "Wszystkie stany",
-  factoryNew: "Fabrycznie nowy",
-  minimalWear: "Lekko używany",
-  fieldTested: "Po testach",
-  wellWorn: "Mocno zużyty",
-  battleScarred: "Po walce",
+  factoryNew: "Factory New",
+  minimalWear: "Minimal Wear",
+  fieldTested: "Field-Tested",
+  wellWorn: "Well-Worn",
+  battleScarred: "Battle-Scarred",
   youWillReceive: "Otrzymasz:",
-  noSkinsFound: "Nie znaleziono skinów spełniających kryteria wyszukiwania.",
+  importantInfo: "WAŻNA INFORMACJA",
+  calculatorImageInfo: "Kliknij w przedmiot, aby zobaczyć go na Steam. Aby zobaczyć zdjęcia przedmiotów w Twoim ekwipunku, zaloguj się przez Steam.",
+  loginToSeeImages: "Po zalogowaniu wszystkie przedmioty będą widoczne w Twoim ekwipunku wraz z ich właściwymi zdjęciami.",
+  noSkinsFound: "Nie znaleziono skinów spełniających kryteria wyszukiwania. Pamiętaj, że wyświetlane są tutaj tylko skiny z wartością sprzedaży powyżej 20 PLN.",
   
   // Inventory
   yourInventory: "Twój ekwipunek",
@@ -178,6 +186,99 @@ export const pl = {
   thankYou: "Dziękujemy za kontakt. Nasz zespół odpowie na Twoją wiadomość tak szybko, jak to możliwe.",
   sendNewMessage: "Wyślij nową wiadomość",
 
+  // Terms of Service - Polish
+  termsTitle: "Regulamin i Polityka Prywatności - skinowo.com",
+  termsEffectiveDate: "Data wejścia w życie: 30 maja 2025",
+  
+  // Sections
+  termsGeneralProvisions: "1. Postanowienia ogólne",
+  termsScopeOfServices: "2. Zakres usług",
+  termsLoginAndUserAccess: "3. Logowanie i dostęp użytkownika",
+  termsPayoutMethods: "4. Metody wypłat",
+  termsAvailabilityAndRestrictions: "5. Dostępność i ograniczenia",
+  termsCustomerSupport: "6. Wsparcie i reklamacje",
+  termsPrivacyPolicy: "7. Polityka prywatności i ochrona danych (RODO)",
+  termsCookies: "8. Pliki cookies i technologie śledzące",
+  termsFinalProvisions: "9. Postanowienia końcowe",
+  
+  // Section Content
+  termsGeneralProvisionsContent: [
+    "1.1 Niniejszy Regulamin dotyczy serwisu internetowego https://skinowo.com, prowadzonego przez Skinowo.com z siedzibą pod adresem 810 Pony Express Rd, Cheyenne, WY 82009, zwanego dalej \"Serwisem\".",
+    "1.2 Kontakt z Serwisem możliwy jest pod adresem e-mail: support@skinowo.com.",
+    "1.3 Korzystając z Serwisu, użytkownik (\"Użytkownik\") potwierdza, że zapoznał się z treścią niniejszego Regulaminu i Polityki Prywatności oraz akceptuje ich postanowienia."
+  ],
+  
+  termsScopeOfServicesContent: [
+    "2.1 Serwis umożliwia Użytkownikom sprzedaż cyfrowych przedmiotów (\"skiny\") z gry Counter-Strike 2 (CS2) w zamian za walutę rzeczywistą.",
+    "2.2 Proces transakcji obejmuje następujące kroki:",
+    "a. Użytkownik loguje się za pomocą konta Steam;",
+    "b. Wybiera przedmioty, które chce sprzedać;",
+    "c. Wybiera preferowaną metodę wypłaty środków;",
+    "d. Akceptuje ofertę wymiany Steam;",
+    "e. Otrzymuje zapłatę w ciągu 5-15 minut w zależności od wybranej metody wypłaty.",
+    "2.3 Minimalna wartość transakcji wynosi 20 PLN / 5 USD.",
+    "2.4 Przedmioty są sprzedawane bezpośrednio do Skinowo.com. Serwis nie działa jako pośrednik między użytkownikami."
+  ],
+  
+  termsLoginAndUserAccessContent: [
+    "3.1 Serwis nie wymaga rejestracji. Dostęp przyznawany jest poprzez logowanie przez Steam przy użyciu oficjalnego protokołu OpenID dostarczanego przez Valve.",
+    "3.2 Serwis nie przechowuje haseł użytkowników ani danych logowania do Steam."
+  ],
+  
+  termsPayoutMethodsContent: [
+    "4.1 Użytkownicy mogą otrzymywać wypłaty poprzez:",
+    "a. Przelew bankowy",
+    "b. PayPal",
+    "c. Skrill",
+    "d. Litecoin (LTC)",
+    "4.2 Wypłaty są przetwarzane w ciągu 5-15 minut po potwierdzeniu wymiany. W wyjątkowych przypadkach czas ten może wydłużyć się do 24 godzin."
+  ],
+  
+  termsAvailabilityAndRestrictionsContent: [
+    "5.1 Serwis jest dostępny na całym świecie bez ograniczeń geograficznych.",
+    "5.2 Nie ma ograniczeń wiekowych; jednakże osoby niepełnoletnie powinny korzystać z Serwisu pod nadzorem rodziców lub opiekunów.",
+    "5.3 Wszystkie transakcje są zgodne z Warunkami korzystania z usługi Valve. Sprzedaż własnych przedmiotów jest legalna i nie powoduje kar na koncie Steam.",
+    "5.4 Skinowo.com zastrzega sobie prawo do odmowy transakcji według własnego uznania."
+  ],
+  
+  termsCustomerSupportContent: [
+    "6.1 Wsparcie klienta dostępne jest 24/7, przez cały tydzień.",
+    "6.2 Użytkownicy mogą składać reklamacje drogą mailową na adres: support@skinowo.com.",
+    "6.3 Szczegóły dotyczące składania reklamacji i procesu zwrotu środków dostępne są w sekcji Polityka zwrotów na stronie internetowej."
+  ],
+  
+  termsPrivacyPolicyContent: [
+    "7.1 Administratorem danych jest Skinowo.com.",
+    "7.2 Serwis zbiera następujące dane osobowe:",
+    "a. Nick Steam",
+    "b. Adres e-mail (jeśli podany dobrowolnie)",
+    "c. Adres IP",
+    "7.3 Dane są przetwarzane w celu:",
+    "a. Poprawy działania serwisu",
+    "b. Przetwarzania transakcji",
+    "c. Prowadzenia anonimowych statystyk za pomocą Google Analytics",
+    "7.4 Do danych mają dostęp wyłącznie Serwis oraz upoważnione podmioty trzecie (np. Google jako podmiot przetwarzający w ramach usług analitycznych).",
+    "7.5 Dane osobowe są przechowywane przez okres niezbędny do realizacji ich celu lub do czasu żądania ich usunięcia przez Użytkownika.",
+    "7.6 Użytkownicy mają prawo do:",
+    "a. Dostępu do swoich danych",
+    "b. Sprostowania swoich danych",
+    "c. Żądania usunięcia danych",
+    "d. Wniesienia sprzeciwu wobec przetwarzania",
+    "7.7 Wszelkie wnioski dotyczące danych należy kierować na adres: support@skinowo.com"
+  ],
+  
+  termsCookiesContent: [
+    "8.1 Serwis wykorzystuje pliki cookies w celu poprawy funkcjonalności i zbierania statystyk ruchu.",
+    "8.2 Użytkownik może w każdej chwili wyłączyć pliki cookies w ustawieniach swojej przeglądarki.",
+    "8.3 Kontynuowanie korzystania z witryny bez wyłączenia plików cookies jest równoznaczne z wyrażeniem zgody na ich używanie."
+  ],
+  
+  termsFinalProvisionsContent: [
+    "9.1 Skinowo.com zastrzega sobie prawo do modyfikacji niniejszego Regulaminu w dowolnym momencie. Wszelkie zmiany zostaną opublikowane na stronie internetowej i wejdą w życie z chwilą ich opublikowania.",
+    "9.2 Kontynuowanie korzystania z Serwisu po wprowadzeniu zmian oznacza akceptację nowych warunków.",
+    "9.3 W sprawach nieuregulowanych niniejszym Regulaminem zastosowanie ma prawo stanu Wyoming, USA."
+  ],
+
   // FAQ Section
   faqSectionTitle: "Najczęściej zadawane pytania",
   faqHowLongSelling: "Ile trwa proces sprzedaży skinów?",
@@ -257,13 +358,35 @@ export const pl = {
   // Footer
   footerDescription: "Najszybszy i najbezpieczniejszy sposób na sprzedaż skinów z CS2. Natychmiastowe wypłaty i konkurencyjne ceny.",
   navigation: "Nawigacja",
-  home: "Strona główna",
   information: "Informacje",
   contact: "Kontakt",
   terms: "Regulamin",
+  refundPolicy: "Polityka zwrotów",
   privacyPolicy: "Polityka prywatności",
   allRightsReserved: "Wszelkie prawa zastrzeżone.",
   termsAndPrivacy: "Regulamin | Polityka Prywatności",
+  
+  // Refund Policy - Polityka zwrotów
+  refundPolicyTitle: "Polityka zwrotów - Skinowo.com",
+  effectiveDate: "Data obowiązywania: 30 maja 2025",
+  generalRefundPolicy: "1. Ogólne zasady zwrotów",
+  generalRefundText: "Wszystkie transakcje zawierane na platformie Skinowo.com są ostateczne i nie podlegają zwrotowi. Dotyczy to sprzedaży i zakupu skinów oraz wszystkich innych usług świadczonych za pośrednictwem naszej strony internetowej. Dokonując transakcji, potwierdzasz, że rozumiesz i akceptujesz, że w żadnych okolicznościach nie będą przysługiwały zwroty.",
+  nonRefundableItems: "2. Przedmioty niepodlegające zwrotowi",
+  nonRefundableItemsDescription: "Następujące przedmioty nie podlegają zwrotowi:",
+  nonRefundableItemsList: [
+    "Wpłaty na saldo",
+    "Skiny sprzedane przez użytkowników do Skinowo.com",
+    "Skiny zakupione w Skinowo.com (jeśli usługa jest oferowana)",
+    "Wszelkie opłaty za usługi lub opłaty związane z platformą, takie jak wycena, opłaty transakcyjne lub prowizje"
+  ],
+  billingDiscrepancies: "3. Nieprawidłowości w rozliczeniach",
+  billingDiscrepanciesText: "Jeśli uważasz, że zostałeś nieprawidłowo obciążony opłatą za transakcję, której nie dokonałeś, musisz powiadomić nasz zespół wsparcia pod adresem support@skinowo.com w ciągu 30 dni od obciążenia. Niewykonanie tego w określonym terminie spowoduje uznanie opłaty za ważną i niepodlegającą zwrotowi.",
+  chargebacks: "4. Chargebacki",
+  chargebacksText: "Jeśli na Twoim koncie zostanie zainicjowany chargeback, Skinowo.com zastrzega sobie prawo do natychmiastowego zawieszenia lub zakończenia dostępu oraz utraty wszelkich pozostałych środków, przedmiotów lub kredytów powiązanych z Twoim kontem. W pełni współpracujemy z dostawcami płatności i odpowiednimi organami w celu zbadania i zakwestionowania wszelkich oszukańczych chargebacków.",
+  finalDecision: "5. Ostateczna decyzja",
+  finalDecisionText: "Wszystkie wnioski o zwrot środków podlegają weryfikacji przez Skinowo.com. Zastrzegamy sobie prawo do zatwierdzenia lub odrzucenia każdego wniosku o zwrot środków według własnego uznania. W przypadku zatwierdzenia zwrotu, środki zostaną zwrócone metodą płatności użytej do transakcji.",
+  contactUsText: "W przypadku pytań lub problemów związanych ze zwrotami, skontaktuj się z naszym zespołem wsparcia:",
+  backToHome: "Powrót do strony głównej",
   
   // Calculator - dodatkowe klucze
   calculatorDesc2: "Nasza platforma oferuje wypłaty w wysokości 70% aktualnej wartości rynkowej skinów. Ceny są aktualizowane w czasie rzeczywistym na podstawie danych z Steam Community Market oraz innych popularnych platform handlowych.",
@@ -320,7 +443,10 @@ export const pl = {
     termsAgreement: "Logując się, akceptujesz nasz",
     termsLink: "Regulamin",
     privacyLink: "Politykę Prywatności",
-    and: "oraz"
+    and: "oraz",
+    redirecting: "Przekierowywanie do strony logowania...",
+    authenticating: "Autoryzacja...",
+    waiting: "Proszę o czekanie, gdy zalogujesz się"
   },
 
   // FAQ
@@ -339,5 +465,19 @@ export const pl = {
     
     question5: "Czy pobieracie prowizję od sprzedaży?",
     answer5: "Tak, pobieramy niewielką prowizję od każdej transakcji, aby utrzymać naszą platformę i zapewnić najwyższą jakość usług. Dokładna wysokość prowizji jest zawsze wyraźnie widoczna przed finalizacją transakcji, więc nie ma żadnych ukrytych opłat."
+  },
+
+  // Historia wymian
+  tradeHistory: {
+    title: 'Historia wymian',
+    noTrades: 'Brak historii wymian',
+    error: 'Nie udało się załadować historii wymian',
+    status: {
+      completed: 'Zakończona',
+      pending: 'W trakcie',
+      failed: 'Anulowana'
+    },
+    items: 'przedmioty',
+    item: 'przedmiot'
   }
 };

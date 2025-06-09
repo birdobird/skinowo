@@ -14,6 +14,7 @@ import curvedArrowImg from '/src/assets/arrow-next.png';
 import { useEffect, useState, useRef } from 'react';
 import FAQ from '../../components/FAQ';
 import { useLanguage } from '../../context/LanguageContext';
+import { Link } from 'react-router-dom';
 
 // Define rarity types and their associated colors
 type Rarity = 'common' | 'uncommon' | 'rare' | 'mythical' | 'legendary' | 'ancient';
@@ -59,12 +60,12 @@ const Home = () => {
     };
   }, []);
   const recentItems: SkinItem[] = [
-    { id: 1, name: 'WATER ELEMENTAL (FT)', price: '3.562 zł', minutes: 5, rarity: 'mythical', image: karambitmImg, weaponType: 'Karambit' },
-    { id: 2, name: 'WATER ELEMENTAL (FT)', price: '3.913 zł', minutes: 5, rarity: 'uncommon', image: karambitmImg, weaponType: 'Karambit' },
-    { id: 3, name: 'WATER ELEMENTAL (FT)', price: '2.545 zł', minutes: 5, rarity: 'legendary', image: karambitmImg, weaponType: 'Karambit' },
-    { id: 4, name: 'WATER ELEMENTAL (FT)', price: '3.645 zł', minutes: 5, rarity: 'uncommon', image: karambitmImg, weaponType: 'Karambit' },
-    { id: 5, name: 'WATER ELEMENTAL (FT)', price: '3.845 zł', minutes: 5, rarity: 'mythical', image: karambitmImg, weaponType: 'Karambit' },
-    { id: 6, name: 'WATER ELEMENTAL (FT)', price: '3.525 zł', minutes: 5, rarity: 'ancient', image: karambitmImg, weaponType: 'Karambit' },
+    { id: 1, name: 'WATER ELEMENTAL (FT)', price: '3.562', minutes: 5, rarity: 'mythical', image: karambitmImg, weaponType: 'Karambit' },
+    { id: 2, name: 'WATER ELEMENTAL (FT)', price: '3.913', minutes: 5, rarity: 'uncommon', image: karambitmImg, weaponType: 'Karambit' },
+    { id: 3, name: 'WATER ELEMENTAL (FT)', price: '2.545', minutes: 5, rarity: 'legendary', image: karambitmImg, weaponType: 'Karambit' },
+    { id: 4, name: 'WATER ELEMENTAL (FT)', price: '3.645', minutes: 5, rarity: 'uncommon', image: karambitmImg, weaponType: 'Karambit' },
+    { id: 5, name: 'WATER ELEMENTAL (FT)', price: '3.845', minutes: 5, rarity: 'mythical', image: karambitmImg, weaponType: 'Karambit' },
+    { id: 6, name: 'WATER ELEMENTAL (FT)', price: '3.525', minutes: 5, rarity: 'ancient', image: karambitmImg, weaponType: 'Karambit' },
   ];
 
   return (
@@ -97,17 +98,21 @@ const Home = () => {
             </p>
             
             <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-0 mt-8">
-              <a href="#" className="w-full md:w-auto bg-[var(--btnColor)] text-black px-6 md:px-12 py-3 uppercase font-medium text-sm rounded-br-3xl rounded-tl-3xl hover:opacity-90 transition-opacity text-center">
-                {t('homePage.cta.sellNow')}
-              </a>
+              <Link to="/inventory">
+                <a className="w-full md:w-auto bg-[var(--btnColor)] text-black px-6 md:px-12 py-3 uppercase font-medium text-sm rounded-br-3xl rounded-tl-3xl hover:opacity-90 transition-opacity text-center">
+                  {t('homePage.cta.sellNow')}
+                </a>
+              </Link>
               
               <div className="hidden md:flex items-center mx-4">
                 <img src={iksImg} alt="Arrow Right" className="w-12 h-12" />
               </div>
               
-              <a href="#" className="w-full md:w-auto bg-white text-black px-6 md:px-12 py-3 uppercase font-medium text-sm rounded-tr-3xl hover:opacity-90 transition-opacity text-center">
-                {t('homePage.cta.calculate')}
-              </a>
+              <Link to="/calculator">
+                <a className="w-full md:w-auto bg-white text-black px-6 md:px-12 py-3 uppercase font-medium text-sm rounded-tr-3xl hover:opacity-90 transition-opacity text-center">
+                  {t('homePage.cta.calculate')}
+                </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -148,7 +153,7 @@ const Home = () => {
                   }} 
                   className="p-4 pb-8 h-full relative"
                 >
-                  <div className="absolute top-2 left-2 text-xs font-medium text-white">{item.price}</div>
+                  <div className="absolute top-2 left-2 text-xs font-medium text-white">{item.price} zł</div>
                   <div className="absolute top-2 right-2 text-[10px] text-white/60">{item.minutes} {t('homePage.recentItems.minutesAgo')}</div>
                   
                   <div className="flex justify-center items-center h-32 mt-4 py-20">
@@ -269,12 +274,11 @@ const Home = () => {
                     className="absolute -left-20 -top-10 w-18 h-auto hidden md:block" 
                   />
                   
-                  <a 
-                    href="#" 
-                    className="inline-block bg-[#222] hover:bg-[#333] text-white font-medium py-2 md:py-3 px-6 md:px-20 text-sm md:text-base rounded-tr-4xl rounded-bl-4xl rounded-tl-md rounded-br-md transition-all duration-300 transform hover:scale-105 shadow-lg"
-                  >
+                  <Link to="/inventory">
+                  <a className="inline-block bg-[#222] hover:bg-[#333] text-white font-medium py-2 md:py-3 px-6 md:px-20 text-sm md:text-base rounded-tr-4xl rounded-bl-4xl rounded-tl-md rounded-br-md transition-all duration-300 transform hover:scale-105 shadow-lg">
                     {t('homePage.banner.cta')}
                   </a>
+                  </Link>
                 </div>
               </div>
               

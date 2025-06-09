@@ -38,7 +38,7 @@ const AdminSidebar = () => {
     { path: '/admin', icon: 'fa-solid fa-gauge-high', label: 'Panel główny' },
     { path: '/admin/users', icon: 'fa-solid fa-users', label: 'Użytkownicy' },
     { path: '/admin/transactions', icon: 'fa-solid fa-receipt', label: 'Transakcje' },
-    { path: '/admin/tickets', icon: 'fa-solid fa-headset', label: 'Zgłoszenia' },
+    { path: '/admin/tickets', icon: 'fa-solid fa-headset', label: 'Zgłoszenia' }
   ];
 
   return (

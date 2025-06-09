@@ -1,97 +1,141 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-// import { useLanguage } from '../../context/LanguageContext';
+import { adminAPI } from '../../services/adminAPI';
+import { toast } from 'react-toastify';
+
+interface Message {
+  id: number;
+  content: string;
+  isAdmin: boolean;
+  createdAt: string;
+  user?: {
+    id: number;
+    displayName: string;
+    avatarUrl: string;
+    isAdmin: boolean;
+  };
+}
 
 interface Ticket {
-  _id: string;
-  userId: string;
-  username: string;
-  avatarUrl: string;
+  id: number;
+  userId: number;
+  user: {
+    id: number;
+    displayName: string;
+    avatarUrl: string;
+    steamId: string;
+  };
   subject: string;
-  status: 'open' | 'closed';
-  lastMessage: string;
-  messagesCount: number;
+  status: 'open' | 'pending' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  messages: Message[];
   createdAt: string;
   updatedAt: string;
+  lastMessageAt: string;
+  unreadCount: number;
+}
+
+interface Filters {
+  status: string;
+  priority: string;
+  dateFrom: string;
+  dateTo: string;
+  search: string;
 }
 
 const Tickets = () => {
-  // const { t } = useLanguage();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<Filters>({
     status: '',
+    priority: '',
     dateFrom: '',
-    dateTo: ''
+    dateTo: '',
+    search: ''
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalTickets, setTotalTickets] = useState(0);
+  const limit = 20;
 
   // Fetch tickets on component mount and when filters or page changes
   useEffect(() => {
     const fetchTickets = async () => {
       setIsLoading(true);
       try {
-        // In a real implementation, this would be an API call with filters
-        // For now, we'll simulate it with a timeout and mock data
-        setTimeout(() => {
-          const mockTickets: Ticket[] = Array.from({ length: 20 }, (_, i) => ({
-            _id: `ticket${i + 1 + (currentPage - 1) * 20}`,
-            userId: `user${Math.floor(Math.random() * 10) + 1}`,
-            username: `SteamUser${Math.floor(Math.random() * 100) + 1}`,
-            avatarUrl: 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg',
-            subject: [
-              'Problem z płatnością',
-              'Nie otrzymałem pieniędzy',
-              'Jak zmienić metodę płatności?',
-              'Błąd przy wysyłaniu skinów',
-              'Pytanie o prowizję',
-              'Nie mogę zalogować się przez Steam',
-              'Jak długo trwa realizacja?'
-            ][Math.floor(Math.random() * 7)],
-            status: Math.random() > 0.3 ? 'open' : 'closed',
-            lastMessage: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl.',
-            messagesCount: Math.floor(Math.random() * 10) + 1,
-            createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-            updatedAt: new Date(Date.now() - Math.random() * 10 * 24 * 60 * 60 * 1000).toISOString()
-          }));
-          
-          // Apply filters (in a real app, this would be done server-side)
-          let filtered = [...mockTickets];
-          
-          if (filters.status) {
-            filtered = filtered.filter(t => t.status === filters.status);
-          }
-          
-          if (filters.dateFrom) {
-            const fromDate = new Date(filters.dateFrom);
-            filtered = filtered.filter(t => new Date(t.createdAt) >= fromDate);
-          }
-          
-          if (filters.dateTo) {
-            const toDate = new Date(filters.dateTo);
-            toDate.setHours(23, 59, 59, 999); // End of the day
-            filtered = filtered.filter(t => new Date(t.createdAt) <= toDate);
-          }
-          
-          setTickets(filtered);
-          setTotalPages(5); // Mock total pages
-          setTotalTickets(100); // Mock total tickets
-          setIsLoading(false);
-        }, 1000);
-      } catch (err) {
-        console.error('Error fetching tickets:', err);
+        const response = await adminAPI.getTickets(
+          currentPage,
+          limit,
+          filters.status || undefined
+        );
+
+        console.log(response);
+        
+        // Check if response has data and pagination info
+        if (response && response.success) {
+          setTickets(response.tickets || []);
+          setTotalPages(response.pagination?.pages || 1);
+          setTotalTickets(response.pagination?.total || (response.tickets ? response.tickets.length : 0));
+        } else {
+          // Fallback in case the response structure is different
+          setTickets(Array.isArray(response) ? response : []);
+          setTotalPages(1);
+          setTotalTickets(Array.isArray(response) ? response.length : 0);
+        }
+      } catch (error) {
+        console.error('Error fetching tickets:', error);
+        toast.error('Wystąpił błąd podczas pobierania zgłoszeń');
+        setTickets([]);
+      } finally {
         setIsLoading(false);
       }
     };
 
     fetchTickets();
-  }, [currentPage, filters]);
+  }, [currentPage, filters.status, filters.priority, filters.dateFrom, filters.dateTo, filters.search]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString();
+  };
+
+  const getLastMessagePreview = (ticket: Ticket) => {
+    if (!ticket.messages || ticket.messages.length === 0) {
+      return 'Brak wiadomości';
+    }
+    const lastMessage = ticket.messages[ticket.messages.length - 1];
+    const content = lastMessage?.content || '';
+    return content.length > 100 ? content.substring(0, 100) + '...' : content;
+  };
+
+  const getPriorityBadge = (priority: 'low' | 'medium' | 'high' | 'urgent') => {
+    switch (priority) {
+      case 'low':
+        return <span className="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-500">Niski</span>;
+      case 'medium':
+        return <span className="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-500">Średni</span>;
+      case 'high':
+        return <span className="px-2 py-1 rounded-full text-xs bg-orange-500/20 text-orange-500">Wysoki</span>;
+      case 'urgent':
+        return <span className="px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-500">Pilny</span>;
+      default:
+        return <span className="px-2 py-1 rounded-full text-xs bg-gray-500/20 text-gray-500">Nieznany</span>;
+    }
+  };
+
+  const getStatusBadge = (status: 'open' | 'pending' | 'resolved' | 'closed') => {
+    switch (status) {
+      case 'open':
+        return <span className="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-500">Otwarte</span>;
+      case 'pending':
+        return <span className="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-500">W trakcie</span>;
+      case 'resolved':
+        return <span className="px-2 py-1 rounded-full text-xs bg-blue-500/20 text-blue-500">Rozwiązane</span>;
+      case 'closed':
+        return <span className="px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-500">Zamknięte</span>;
+      default:
+        return <span className="px-2 py-1 rounded-full text-xs bg-gray-500/20 text-gray-500">Nieznany</span>;
+    }
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
@@ -103,8 +147,10 @@ const Tickets = () => {
   const resetFilters = () => {
     setFilters({
       status: '',
+      priority: '',
       dateFrom: '',
-      dateTo: ''
+      dateTo: '',
+      search: ''
     });
     setCurrentPage(1);
   };
@@ -133,6 +179,21 @@ const Tickets = () => {
             </select>
           </div>
           <div>
+            <label className="block text-sm text-gray-400 mb-1">Priorytet</label>
+            <select
+              name="priority"
+              value={filters.priority}
+              onChange={handleFilterChange}
+              className="w-full bg-[var(--bgColor)] border border-gray-700 rounded-lg p-2 text-sm"
+            >
+              <option value="">Wszystkie</option>
+              <option value="low">Niski</option>
+              <option value="medium">Średni</option>
+              <option value="high">Wysoki</option>
+              <option value="urgent">Pilny</option>
+            </select>
+          </div>
+          <div>
             <label className="block text-sm text-gray-400 mb-1">Data od</label>
             <input
               type="date"
@@ -148,6 +209,16 @@ const Tickets = () => {
               type="date"
               name="dateTo"
               value={filters.dateTo}
+              onChange={handleFilterChange}
+              className="w-full bg-[var(--bgColor)] border border-gray-700 rounded-lg p-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Wyszukaj</label>
+            <input
+              type="text"
+              name="search"
+              value={filters.search}
               onChange={handleFilterChange}
               className="w-full bg-[var(--bgColor)] border border-gray-700 rounded-lg p-2 text-sm"
             />
@@ -175,54 +246,80 @@ const Tickets = () => {
               <table className="w-full">
                 <thead>
                   <tr className="text-left text-gray-400 text-sm border-b border-gray-800 bg-gray-800/30">
-                    <th className="px-6 py-3 font-medium">ID</th>
-                    <th className="px-6 py-3 font-medium">Użytkownik</th>
-                    <th className="px-6 py-3 font-medium">Temat</th>
-                    <th className="px-6 py-3 font-medium">Status</th>
-                    <th className="px-6 py-3 font-medium">Wiadomości</th>
-                    <th className="px-6 py-3 font-medium">Data utworzenia</th>
-                    <th className="px-6 py-3 font-medium">Ostatnia aktywność</th>
-                    <th className="px-6 py-3 font-medium">Akcje</th>
+                    <th className="px-6 py-3 font-medium text-left">ID</th>
+                    <th className="px-6 py-3 font-medium text-left">Użytkownik</th>
+                    <th className="px-6 py-3 font-medium text-left">Temat</th>
+                    <th className="px-6 py-3 font-medium text-left">Ostatnia wiadomość</th>
+                    <th className="px-6 py-3 font-medium text-center">Priorytet</th>
+                    <th className="px-6 py-3 font-medium text-center">Status</th>
+                    <th className="px-6 py-3 font-medium text-center">Data utworzenia</th>
+                    <th className="px-6 py-3 font-medium text-center">Akcje</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tickets.map((ticket) => (
-                    <tr key={ticket._id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                      <td className="px-6 py-4 text-sm">#{ticket._id}</td>
+                    <tr key={ticket.id} className="border-b border-gray-800 hover:bg-gray-800/30">
                       <td className="px-6 py-4">
-                        <div className="flex items-center space-x-3">
+                        <Link 
+                          to={`/admin/tickets/${ticket.id}`}
+                          className="text-[var(--btnColor)] hover:underline font-mono"
+                        >
+                          #{ticket.id.toString().padStart(6, '0')}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Link 
+                          to={`/admin/users/${ticket.user.id}`}
+                          className="flex items-center space-x-2 group"
+                        >
                           <img 
-                            src={ticket.avatarUrl} 
-                            alt={ticket.username} 
+                            src={ticket.user.avatarUrl || '/default-avatar.png'} 
+                            alt={ticket.user.displayName}
                             className="w-8 h-8 rounded-full"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/default-avatar.png';
+                            }}
                           />
-                          <Link 
-                            to={`/admin/users/${ticket.userId}`}
-                            className="hover:text-[var(--btnColor)] hover:underline"
-                          >
-                            {ticket.username}
-                          </Link>
+                          <div className="flex flex-col">
+                            <span className="group-hover:text-[var(--btnColor)] transition-colors">
+                              {ticket.user.displayName}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {ticket.user.steamId}
+                            </span>
+                          </div>
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium">{ticket.subject}</div>
+                        <div className="text-xs text-gray-400">
+                          {ticket.messages?.length || 0} wiadomości
+                          {ticket.unreadCount > 0 && (
+                            <span className="ml-2 px-1.5 py-0.5 bg-red-900/50 text-red-300 rounded-full text-xs">
+                              {ticket.unreadCount} nowych
+                            </span>
+                          )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm">{ticket.subject}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          ticket.status === 'open' 
-                            ? 'bg-green-500/20 text-green-500' 
-                            : 'bg-gray-500/20 text-gray-500'
-                        }`}>
-                          {ticket.status === 'open' ? 'Otwarte' : 'Zamknięte'}
-                        </span>
+                      <td className="px-6 py-4 text-sm text-gray-400 max-w-xs truncate">
+                        {getLastMessagePreview(ticket)}
                       </td>
-                      <td className="px-6 py-4 text-sm">{ticket.messagesCount}</td>
-                      <td className="px-6 py-4 text-sm text-gray-400">{formatDate(ticket.createdAt)}</td>
-                      <td className="px-6 py-4 text-sm text-gray-400">{formatDate(ticket.updatedAt)}</td>
-                      <td className="px-6 py-4 text-sm">
+                      <td className="px-6 py-4 text-center">
+                        {getPriorityBadge(ticket.priority)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {getStatusBadge(ticket.status)}
+                      </td>
+                      <td className="px-6 py-4 text-center text-sm text-gray-400">
+                        {formatDate(ticket.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
                         <Link 
-                          to={`/admin/tickets/${ticket._id}`}
+                          to={`/admin/tickets/${ticket.id}`}
                           className="text-[var(--btnColor)] hover:underline"
                         >
-                          {ticket.status === 'open' ? 'Odpowiedz' : 'Zobacz'}
+                          Otwórz
                         </Link>
                       </td>
                     </tr>

@@ -1,90 +1,103 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { adminAPI } from '../../services/adminAPI';
+import { toast } from 'react-toastify';
+
+interface TransactionItem {
+  id: string;
+  name: string;
+  image: string;
+  price: number;
+  assetId: string;
+}
 
 interface Transaction {
-  _id: string;
-  userId: string;
-  username: string;
-  avatarUrl: string;
-  items: {
-    name: string;
-    image: string;
-    ourPrice: number;
-  }[];
-  totalAmount: number;
-  paymentMethod: 'bank' | 'paypal' | 'skrill' | 'crypto';
-  status: 'pending' | 'completed' | 'failed';
+  id: number;
+  userId: number;
+  user: {
+    id: number;
+    displayName: string;
+    avatarUrl: string;
+    steamId: string;
+  };
+  type: 'sale' | 'purchase' | 'withdrawal' | 'deposit';
+  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  amount: number;
+  fee: number;
+  currency: string;
+  items: TransactionItem[];
+  paymentMethod?: string;
+  paymentDetails?: any;
   createdAt: string;
+  updatedAt: string;
   completedAt?: string;
+}
+
+interface Filters {
+  status: string;
+  type: string;
+  paymentMethod: string;
+  dateFrom: string;
+  dateTo: string;
+  userId: string;
 }
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<Filters>({
     status: '',
+    type: '',
     paymentMethod: '',
     dateFrom: '',
-    dateTo: ''
+    dateTo: '',
+    userId: ''
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalTransactions, setTotalTransactions] = useState(0);
+  const limit = 20;
 
   // Fetch transactions on component mount and when filters or page changes
   useEffect(() => {
     const fetchTransactions = async () => {
       setIsLoading(true);
       try {
-        // In a real implementation, this would be an API call with filters
-        // For now, we'll simulate it with a timeout and mock data
-        setTimeout(() => {
-          const mockTransactions: Transaction[] = Array.from({ length: 20 }, (_, i) => ({
-            _id: `transaction${i + 1 + (currentPage - 1) * 20}`,
-            userId: `user${Math.floor(Math.random() * 10) + 1}`,
-            username: `SteamUser${Math.floor(Math.random() * 100) + 1}`,
-            avatarUrl: 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg',
-            items: Array.from({ length: Math.floor(Math.random() * 3) + 1 }, (_, j) => ({
-              name: ['AWP | Asiimov (FT)', 'AK-47 | Redline (FT)', 'M4A4 | Howl (MW)', 'Karambit | Fade (FN)'][Math.floor(Math.random() * 4)],
-              image: '/src/assets/awp.png',
-              ourPrice: Math.random() * 500 + 50
-            })),
-            totalAmount: Math.random() * 1000 + 100,
-            paymentMethod: ['bank', 'paypal', 'skrill', 'crypto'][Math.floor(Math.random() * 4)] as 'bank' | 'paypal' | 'skrill' | 'crypto',
-            status: ['pending', 'completed', 'failed'][Math.floor(Math.random() * 3)] as 'pending' | 'completed' | 'failed',
-            createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-            completedAt: Math.random() > 0.3 ? new Date(Date.now() - Math.random() * 20 * 24 * 60 * 60 * 1000).toISOString() : undefined
-          }));
-          
-          // Apply filters (in a real app, this would be done server-side)
-          let filtered = [...mockTransactions];
-          
-          if (filters.status) {
-            filtered = filtered.filter(t => t.status === filters.status);
-          }
-          
-          if (filters.paymentMethod) {
-            filtered = filtered.filter(t => t.paymentMethod === filters.paymentMethod);
-          }
-          
-          if (filters.dateFrom) {
-            const fromDate = new Date(filters.dateFrom);
-            filtered = filtered.filter(t => new Date(t.createdAt) >= fromDate);
-          }
-          
-          if (filters.dateTo) {
-            const toDate = new Date(filters.dateTo);
-            toDate.setHours(23, 59, 59, 999); // End of the day
-            filtered = filtered.filter(t => new Date(t.createdAt) <= toDate);
-          }
-          
-          setTransactions(filtered);
-          setTotalPages(5); // Mock total pages
-          setTotalTransactions(100); // Mock total transactions
-          setIsLoading(false);
-        }, 1000);
-      } catch (err) {
-        console.error('Error fetching transactions:', err);
+        const response = await adminAPI.getTransactions(
+          currentPage,
+          limit,
+          filters.userId || undefined
+        );
+        
+        // Log the response to check its structure
+        console.log('Transactions API Response:', response);
+        
+        // Handle response with success flag
+        if (response && response.success) {
+          setTransactions(response.transactions || response.data || []);
+          setTotalPages(response.pagination?.pages || 1);
+          setTotalTransactions(response.pagination?.total || (response.transactions ? response.transactions.length : 0));
+        } 
+        // Fallback for array response (for backward compatibility)
+        else if (Array.isArray(response)) {
+          setTransactions(response);
+          setTotalPages(1);
+          setTotalTransactions(response.length);
+        } 
+        // Fallback for unexpected response format
+        else {
+          console.warn('Unexpected response format:', response);
+          setTransactions([]);
+          setTotalPages(1);
+          setTotalTransactions(0);
+        }
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+        toast.error('Wystąpił błąd podczas pobierania transakcji');
+        setTransactions([]);
+        setTotalPages(1);
+        setTotalTransactions(0);
+      } finally {
         setIsLoading(false);
       }
     };
@@ -93,30 +106,67 @@ const Transactions = () => {
   }, [currentPage, filters]);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
+    return new Date(dateString).toLocaleString('pl-PL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number, currency = 'PLN') => {
     return new Intl.NumberFormat('pl-PL', {
       style: 'currency',
-      currency: 'PLN',
+      currency,
       minimumFractionDigits: 2
     }).format(amount);
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-900/50 text-green-300';
+      case 'failed':
+        return 'bg-red-900/50 text-red-300';
+      case 'cancelled':
+        return 'bg-gray-700/50 text-gray-300';
+      case 'pending':
+      default:
+        return 'bg-yellow-900/50 text-yellow-300';
+    }
+  };
+
+  const getTypeBadge = (type: string) => {
+    const types: Record<string, { text: string; class: string }> = {
+      sale: { text: 'Sprzedaż', class: 'bg-green-900/50 text-green-300' },
+      purchase: { text: 'Zakup', class: 'bg-blue-900/50 text-blue-300' },
+      withdrawal: { text: 'Wypłata', class: 'bg-purple-900/50 text-purple-300' },
+      deposit: { text: 'Wpłata', class: 'bg-yellow-900/50 text-yellow-300' },
+    };
+    
+    const typeInfo = types[type] || { text: type, class: 'bg-gray-700/50 text-gray-300' };
+    return (
+      <span className={`px-2 py-1 text-xs rounded-full ${typeInfo.class}`}>
+        {typeInfo.text}
+      </span>
+    );
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   };
 
   const resetFilters = () => {
     setFilters({
       status: '',
+      type: '',
       paymentMethod: '',
       dateFrom: '',
-      dateTo: ''
+      dateTo: '',
+      userId: ''
     });
     setCurrentPage(1);
   };
@@ -143,6 +193,21 @@ const Transactions = () => {
               <option value="pending">Oczekujące</option>
               <option value="completed">Zakończone</option>
               <option value="failed">Anulowane</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Typ</label>
+            <select
+              name="type"
+              value={filters.type}
+              onChange={handleFilterChange}
+              className="w-full bg-[var(--bgColor)] border border-gray-700 rounded-lg p-2 text-sm"
+            >
+              <option value="">Wszystkie</option>
+              <option value="sale">Sprzedaż</option>
+              <option value="purchase">Zakup</option>
+              <option value="withdrawal">Wypłata</option>
+              <option value="deposit">Wpłata</option>
             </select>
           </div>
           <div>
@@ -203,74 +268,74 @@ const Transactions = () => {
               <table className="w-full">
                 <thead>
                   <tr className="text-left text-gray-400 text-sm border-b border-gray-800 bg-gray-800/30">
-                    <th className="px-6 py-3 font-medium">ID</th>
-                    <th className="px-6 py-3 font-medium">Użytkownik</th>
-                    <th className="px-6 py-3 font-medium">Przedmioty</th>
-                    <th className="px-6 py-3 font-medium">Kwota</th>
-                    <th className="px-6 py-3 font-medium">Metoda płatności</th>
-                    <th className="px-6 py-3 font-medium">Status</th>
-                    <th className="px-6 py-3 font-medium">Data</th>
-                    <th className="px-6 py-3 font-medium">Akcje</th>
+                    <th className="px-6 py-3 font-medium text-left">ID</th>
+                    <th className="px-6 py-3 font-medium text-left">Typ</th>
+                    <th className="px-6 py-3 font-medium text-left">Użytkownik</th>
+                    <th className="px-6 py-3 font-medium text-right">Kwota</th>
+                    <th className="px-6 py-3 font-medium text-center">Status</th>
+                    <th className="px-6 py-3 font-medium text-center">Data</th>
+                    <th className="px-6 py-3 font-medium text-center">Akcje</th>
                   </tr>
                 </thead>
                 <tbody>
                   {transactions.map((transaction) => (
-                    <tr key={transaction._id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                      <td className="px-6 py-4 text-sm">#{transaction._id}</td>
+                    <tr key={transaction.id} className="border-b border-gray-800 hover:bg-gray-800/30">
                       <td className="px-6 py-4">
-                        <div className="flex items-center space-x-3">
+                        <Link 
+                          to={`/admin/transactions/${transaction.id}`}
+                          className="text-[var(--btnColor)] hover:underline font-mono"
+                        >
+                          #{transaction.id.toString().padStart(6, '0')}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4">
+                        {getTypeBadge(transaction.type)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <Link 
+                          to={`/admin/users/${transaction.user.id}`}
+                          className="flex items-center space-x-2 group"
+                        >
                           <img 
-                            src={transaction.avatarUrl} 
-                            alt={transaction.username} 
+                            src={transaction.user.avatarUrl || '/default-avatar.png'} 
+                            alt={transaction.user.displayName}
                             className="w-8 h-8 rounded-full"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/default-avatar.png';
+                            }}
                           />
-                          <Link 
-                            to={`/admin/users/${transaction.userId}`}
-                            className="hover:text-[var(--btnColor)] hover:underline"
-                          >
-                            {transaction.username}
-                          </Link>
-                        </div>
+                          <div className="flex flex-col">
+                            <span className="group-hover:text-[var(--btnColor)] transition-colors">
+                              {transaction.user.displayName}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {transaction.user.steamId}
+                            </span>
+                          </div>
+                        </Link>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex -space-x-2">
-                          {transaction.items.map((item, index) => (
-                            <img 
-                              key={index}
-                              src={item.image} 
-                              alt={item.name} 
-                              className="w-8 h-8 rounded-full border border-gray-800"
-                              title={`${item.name} - ${formatCurrency(item.ourPrice)}`}
-                            />
-                          ))}
-                          {transaction.items.length > 3 && (
-                            <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs">
-                              +{transaction.items.length - 3}
-                            </div>
-                          )}
-                        </div>
+                      <td className="px-6 py-4 text-right font-mono">
+                        {formatCurrency(transaction.amount, transaction.currency)}
+                        {transaction.fee > 0 && (
+                          <div className="text-xs text-gray-400">
+                            Opłata: {formatCurrency(transaction.fee, transaction.currency)}
+                          </div>
+                        )}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium">{formatCurrency(transaction.totalAmount)}</td>
-                      <td className="px-6 py-4 text-sm capitalize">{transaction.paymentMethod}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          transaction.status === 'completed' 
-                            ? 'bg-green-500/20 text-green-500' 
-                            : transaction.status === 'pending'
-                            ? 'bg-amber-500/20 text-amber-500'
-                            : 'bg-red-500/20 text-red-500'
-                        }`}>
-                          {transaction.status === 'completed' 
-                            ? 'Zakończona' 
-                            : transaction.status === 'pending'
-                            ? 'Oczekująca'
-                            : 'Anulowana'}
+                      <td className="px-6 py-4 text-center">
+                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(transaction.status)}`}>
+                          {transaction.status === 'completed' ? 'Zakończona' : 
+                           transaction.status === 'pending' ? 'Oczekująca' :
+                           transaction.status === 'cancelled' ? 'Anulowana' : 'Nieudana'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-400">{formatDate(transaction.createdAt)}</td>
-                      <td className="px-6 py-4 text-sm">
+                      <td className="px-6 py-4 text-center text-sm text-gray-400">
+                        {formatDate(transaction.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
                         <Link 
-                          to={`/admin/transactions/${transaction._id}`}
+                          to={`/admin/transactions/${transaction.id}`}
                           className="text-[var(--btnColor)] hover:underline"
                         >
                           Szczegóły

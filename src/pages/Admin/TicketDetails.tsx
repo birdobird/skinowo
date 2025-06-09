@@ -1,30 +1,36 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-// import { useLanguage } from '../../context/LanguageContext';
-import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-toastify';
+import { adminAPI } from '../../services/adminAPI';
 
 interface Message {
-  sender: 'user' | 'admin';
+  id: string | number;
   content: string;
-  timestamp: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string | number;
+  isAdmin?: boolean;
+  isInitial?: boolean;
 }
 
 interface TicketDetails {
-  _id: string;
-  userId: string;
-  username: string;
-  avatarUrl: string;
+  id: string | number;
   subject: string;
-  status: 'open' | 'closed';
+  status: string;
+  category: string;
+  priority: string;
+  message: string;
   messages: Message[];
   createdAt: string;
   updatedAt: string;
+  userId: string | number;
+  email?: string;
+  avatarUrl?: string;
+  username?: string;
 }
 
 const TicketDetails = () => {
   const { id } = useParams<{ id: string }>();
-  // const { t } = useLanguage();
-  const { user } = useAuth();
   const [ticket, setTicket] = useState<TicketDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [replyContent, setReplyContent] = useState('');
@@ -33,49 +39,27 @@ const TicketDetails = () => {
 
   useEffect(() => {
     const fetchTicketDetails = async () => {
+      if (!id) return;
+      
       setIsLoading(true);
       try {
-        // In a real implementation, this would be an API call
-        // For now, we'll simulate it with a timeout and mock data
-        setTimeout(() => {
-          const mockTicket: TicketDetails = {
-            _id: id || 'ticket1',
-            userId: 'user1',
-            username: 'SteamUser123',
-            avatarUrl: 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg',
-            subject: 'Problem z płatnością',
-            status: 'open',
-            messages: [
-              {
-                sender: 'user',
-                content: 'Cześć, mam problem z płatnością. Wysłałem skiny, ale nie otrzymałem pieniędzy. Proszę o pomoc.',
-                timestamp: new Date(Date.now() - 86400000).toISOString()
-              },
-              {
-                sender: 'admin',
-                content: 'Dzień dobry, dziękujemy za zgłoszenie. Proszę podać numer transakcji, abyśmy mogli sprawdzić status płatności.',
-                timestamp: new Date(Date.now() - 72000000).toISOString()
-              },
-              {
-                sender: 'user',
-                content: 'Numer transakcji to #123456. Płatność miała być zrealizowana na konto bankowe.',
-                timestamp: new Date(Date.now() - 36000000).toISOString()
-              }
-            ],
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            updatedAt: new Date(Date.now() - 36000000).toISOString()
-          };
-          
-          setTicket(mockTicket);
-          setIsLoading(false);
-        }, 1000);
+        const data = await adminAPI.getTicket(id);
+        if (data) {
+          setTicket(data);
+        } else {
+          throw new Error('Nieprawidłowa odpowiedź z serwera');
+        }
       } catch (err) {
-        console.error('Error fetching ticket details:', err);
+        console.error('Błąd podczas ładowania zgłoszenia:', err);
+        // Handle error (show toast, etc.)
+      } finally {
         setIsLoading(false);
       }
     };
 
-    fetchTicketDetails();
+    if (id) {
+      fetchTicketDetails();
+    }
   }, [id]);
 
   useEffect(() => {
@@ -84,114 +68,93 @@ const TicketDetails = () => {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [ticket?.messages]);
-
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return date.toLocaleDateString('pl-PL', options);
   };
 
   const handleSendReply = async () => {
-    if (!replyContent.trim()) return;
+    if (!replyContent.trim() || !id) return;
     
     setIsSending(true);
     try {
-      // In a real implementation, this would be an API call
-      // For now, we'll simulate it with a timeout
-      setTimeout(() => {
-        const newMessage: Message = {
-          sender: 'admin',
-          content: replyContent,
-          timestamp: new Date().toISOString()
-        };
-        
-        setTicket(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            messages: [...prev.messages, newMessage],
-            updatedAt: new Date().toISOString()
-          };
-        });
-        
+      // Wysyłamy wiadomość (aktualizacja statusu jest teraz w jednym żądaniu)
+      await adminAPI.sendTicketMessage(id.toString(), replyContent);
+      
+      // Odświeżamy dane zgłoszenia
+      const response = await adminAPI.getTicket(id.toString());
+      
+      // Upewniamy się, że mamy obiekt ticket
+      if (response) {
+        setTicket(response);
         setReplyContent('');
+        
+        // Przewiń do dołu po wysłaniu wiadomości
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        toast.success('Odpowiedź została wysłana');
+      }
+      } catch (err) {
+        console.error('Błąd podczas wysyłania odpowiedzi:', err);
+        toast.error('Wystąpił błąd podczas wysyłania odpowiedzi');
+      } finally {
         setIsSending(false);
-      }, 500);
-    } catch (err) {
-      console.error('Error sending reply:', err);
-      setIsSending(false);
-    }
+      }
   };
 
-  const handleCloseTicket = async () => {
-    if (!ticket) return;
+  const updateTicketStatus = async (newStatus: 'open' | 'closed') => {
+    if (!id) return;
     
     try {
-      // In a real implementation, this would be an API call
-      // For now, we'll simulate it with a timeout
-      setTimeout(() => {
-        setTicket(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            status: 'closed',
-            updatedAt: new Date().toISOString()
-          };
-        });
-      }, 500);
-    } catch (err) {
-      console.error('Error closing ticket:', err);
+      await adminAPI.updateTicketStatus(id, newStatus);
+      
+      // Odśwież dane zgłoszenia
+      const response = await adminAPI.getTicket(id);
+      
+      // Upewniamy się, że mamy obiekt ticket
+      if (response) {
+        setTicket(response);
+        toast.success(`Zgłoszenie zostało ${newStatus === 'open' ? 'otwarte' : 'zamknięte'}`);
+      }
+    } catch (error) {
+      console.error(`Błąd podczas ${newStatus === 'open' ? 'otwierania' : 'zamykania'} zgłoszenia:`, error);
+      toast.error(`Wystąpił błąd podczas ${newStatus === 'open' ? 'otwierania' : 'zamykania'} zgłoszenia`);
     }
   };
 
-  const handleReopenTicket = async () => {
-    if (!ticket) return;
-    
-    try {
-      // In a real implementation, this would be an API call
-      // For now, we'll simulate it with a timeout
-      setTimeout(() => {
-        setTicket(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            status: 'open',
-            updatedAt: new Date().toISOString()
-          };
-        });
-      }, 500);
-    } catch (err) {
-      console.error('Error reopening ticket:', err);
-    }
-  };
+  const handleCloseTicket = () => updateTicketStatus('closed');
+  const handleReopenTicket = () => updateTicketStatus('open');
 
-  if (isLoading) {
+  if (isLoading || !ticket) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--btnColor)]"></div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
-
-  if (!ticket) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-xl font-semibold">Zgłoszenie nie znalezione</h2>
-        <p className="mt-2 text-gray-400">Nie znaleziono zgłoszenia o podanym ID.</p>
-        <Link to="/admin/tickets" className="mt-4 inline-block bg-[var(--btnColor)] text-black px-4 py-2 rounded-lg">
-          Powrót do listy zgłoszeń
-        </Link>
-      </div>
-    );
-  }
+  
+  const isCurrentUser = (userId: string | number) => {
+    return String(userId) === String(ticket.userId);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
           <Link to="/admin/tickets" className="text-gray-400 hover:text-white">
             <span className="material-symbols-outlined">arrow_back</span>
           </Link>
-          <h1 className="text-2xl font-bold">Zgłoszenie #{ticket._id}</h1>
+          <h1 className="text-2xl font-bold">Zgłoszenie #{ticket.id}</h1>
         </div>
         <div>
           {ticket.status === 'open' ? (
@@ -251,37 +214,27 @@ const TicketDetails = () => {
 
       {/* Messages */}
       <div className="bg-[var(--secondaryBgColor)] rounded-xl border border-gray-800 overflow-hidden">
-        <div className="p-6 max-h-[500px] overflow-y-auto">
-          <div className="space-y-6">
-            {ticket.messages.map((message, index) => (
-              <div 
-                key={index} 
-                className={`flex ${message.sender === 'admin' ? 'justify-end' : 'justify-start'}`}
+        <div className="space-y-4 mb-6">
+          <h3 className="font-medium">Wiadomości:</h3>
+          <div className="space-y-4 max-h-[400px] overflow-y-auto p-2">
+            {ticket.messages?.map((message: Message, index: number) => (
+              <div
+                key={`${message.id}-${index}`}
+                className={`flex ${isCurrentUser(message.userId) ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`max-w-[70%] ${message.sender === 'admin' ? 'bg-[var(--btnColor)]/10 text-white' : 'bg-gray-700 text-white'} rounded-lg p-4`}>
-                  <div className="flex items-center space-x-2 mb-2">
-                    {message.sender === 'user' ? (
-                      <>
-                        <img 
-                          src={ticket.avatarUrl} 
-                          alt={ticket.username} 
-                          className="w-6 h-6 rounded-full"
-                        />
-                        <span className="font-medium">{ticket.username}</span>
-                      </>
-                    ) : (
-                      <>
-                        <img 
-                          src={user?.avatarUrl || 'https://via.placeholder.com/32'} 
-                          alt="Admin" 
-                          className="w-6 h-6 rounded-full"
-                        />
-                        <span className="font-medium">Admin</span>
-                      </>
-                    )}
-                    <span className="text-xs text-gray-400">{formatDate(message.timestamp)}</span>
-                  </div>
-                  <p className="whitespace-pre-line">{message.content}</p>
+                <div
+                  className={`max-w-3/4 rounded-lg p-4 ${
+                    isCurrentUser(message.userId)
+                      ? 'bg-blue-100 dark:bg-blue-900 rounded-tr-none'
+                      : 'bg-gray-100 dark:bg-gray-700 rounded-tl-none'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formatDate(message.createdAt)}
+                    {message.isInitial && ' (Początkowa wiadomość)'}
+                    {message.isAdmin && ' (Odpowiedź obsługi)'}
+                  </p>
                 </div>
               </div>
             ))}
@@ -290,32 +243,31 @@ const TicketDetails = () => {
         </div>
 
         {/* Reply Form */}
-        {ticket.status === 'open' && (
-          <div className="p-4 border-t border-gray-800">
-            <textarea
+        <div className="border-t pt-4">
+          <div className="flex space-x-2">
+            <input
+              type="text"
               value={replyContent}
               onChange={(e) => setReplyContent(e.target.value)}
-              className="w-full h-32 bg-[var(--bgColor)] border border-gray-700 rounded-lg p-3 text-sm resize-none"
-              placeholder="Napisz odpowiedź..."
+              placeholder="Wpisz odpowiedź..."
+              className="flex-1 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onKeyPress={(e) => e.key === 'Enter' && handleSendReply()}
+              disabled={isSending || ticket.status !== 'open'}
             />
-            <div className="mt-3 flex justify-end">
-              <button
-                onClick={handleSendReply}
-                className="bg-[var(--btnColor)] text-black px-4 py-2 rounded-lg hover:opacity-90 transition-opacity flex items-center"
-                disabled={isSending || !replyContent.trim()}
-              >
-                {isSending ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-black"></div>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined mr-2">send</span>
-                    <span>Wyślij odpowiedź</span>
-                  </>
-                )}
-              </button>
-            </div>
+            <button
+              onClick={handleSendReply}
+              disabled={!replyContent.trim() || isSending || ticket.status !== 'open'}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSending ? 'Wysyłanie...' : 'Wyślij'}
+            </button>
           </div>
-        )}
+          {ticket.status !== 'open' && (
+            <p className="text-sm text-red-500 mt-2">
+              To zgłoszenie jest zamknięte. Nie można dodawać nowych wiadomości.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

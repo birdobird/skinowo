@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import bgBlurDots from '/src/assets/bg-blur-dots.png';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { toast } from 'react-toastify';
 
 type SupportCategory = 'general' | 'payment' | 'technical' | 'other';
 
@@ -11,6 +12,7 @@ const Support = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [category, setCategory] = useState<SupportCategory>('general');
+  const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [steamId, setSteamId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,35 +48,82 @@ const Support = () => {
   
   // Automatycznie wypełnij Steam ID jeśli użytkownik jest zalogowany
   useEffect(() => {
-    if (user && user.steamId) {
-      setSteamId(user.steamId);
+    if (user) {
+      if (user.steamId) setSteamId(user.steamId);
+      if (user.email) setEmail(user.email);
+      if (user.username) setName(user.username);
     }
   }, [user]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Dodaj Steam ID do historii ostatnio używanych ID, jeśli nie jest puste
+    // Add Steam ID to recently used history if not empty
     if (steamId.trim() !== '') {
       if (!recentSteamIds.includes(steamId)) {
-        const newRecentIds = [steamId, ...recentSteamIds].slice(0, 5); // Zachowaj maksymalnie 5 ostatnich ID
+        const newRecentIds = [steamId, ...recentSteamIds].slice(0, 5); // Keep max 5 recent IDs
         setRecentSteamIds(newRecentIds);
         localStorage.setItem('recentSteamIds', JSON.stringify(newRecentIds));
       }
     }
     
-    // Simulate form submission
-    setTimeout(() => {
+    // Validate required fields
+    if (!name || !email || !category || !subject || !message) {
+      toast.error('Proszę wypełnić wszystkie wymagane pola');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    try {
+      // Create ticket data
+      const ticketData = {
+        name,
+        email,
+        category,
+        subject,
+        message,
+        steamId: steamId.trim() || undefined
+      };
+      
+      // Send ticket to backend API
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/support/ticket`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': localStorage.getItem('accessToken') ? `Bearer ${localStorage.getItem('accessToken')}` : ''
+        },
+        body: JSON.stringify(ticketData)
+      });
+      
+      const data: { success: boolean; error?: string } = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Nie udało się wysłać zgłoszenia');
+      }
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Wystąpił błąd podczas przetwarzania żądania');
+      }
+      
       setIsSubmitting(false);
       setIsSubmitted(true);
+      
       // Reset form
       setName('');
       setEmail('');
       setCategory('general');
+      setSubject('');
       setMessage('');
       setSteamId('');
-    }, 1500);
+      
+      // Show success toast
+      toast.success('Zgłoszenie zostało wysłane pomyślnie!');
+    } catch (error) {
+      console.error('Error submitting support ticket:', error);
+      setIsSubmitting(false);
+      toast.error('Wystąpił błąd podczas wysyłania zgłoszenia. Spróbuj ponownie później.');
+    }
   };
 
   return (
@@ -173,12 +222,26 @@ const Support = () => {
                           value={category}
                           onChange={(e) => setCategory(e.target.value as SupportCategory)}
                           className="w-full bg-[var(--secondaryBgColor)] border border-gray-700 rounded-lg p-3 text-sm"
+                          required
                         >
                           <option value="general">{t('generalQuestions')}</option>
                           <option value="payment">{t('paymentIssues')}</option>
                           <option value="technical">{t('technicalIssues')}</option>
                           <option value="other">{t('other')}</option>
                         </select>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="subject" className="block text-sm font-medium mb-2">Temat *</label>
+                        <input
+                          type="text"
+                          id="subject"
+                          value={subject}
+                          onChange={(e) => setSubject(e.target.value)}
+                          className="w-full bg-[var(--secondaryBgColor)] border border-gray-700 rounded-lg p-3 text-sm"
+                          placeholder="Wprowadź temat zgłoszenia"
+                          required
+                        />
                       </div>
                       <div className="relative">
                         <label htmlFor="steamId" className="block text-sm font-medium mb-2">{t('steamId')}</label>
