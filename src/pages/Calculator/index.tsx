@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, memo, useMemo } from 'react';
 import bgBlurDots from '/src/assets/bg-blur-dots.png';
 import { useLanguage } from '../../context/LanguageContext';
+import { getString } from '../../utils/i18n';
 import { getItemPrices } from '../../services/skinportService';
 import type { SkinportItem } from '../../services/skinportService';
 import SkinImage from '../../components/SkinImage';
@@ -76,6 +77,7 @@ const getRarity = (price: number): Rarity => {
 
 const Calculator = () => {
   const { t } = useLanguage();
+  const tString = useCallback((key: string, fallback: string = '') => getString(t(key), fallback), [t]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedWear, setSelectedWear] = useState('all');
@@ -354,7 +356,7 @@ const Calculator = () => {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder={t('searchSkins')}
+                  placeholder={tString('searchSkins', 'Search skins...')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-[var(--secondaryBgColor)] border border-gray-700 rounded-lg p-3 pl-10 text-sm"

@@ -1,22 +1,32 @@
 import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
-type FAQItemProps = {
-  question: string;
-  answer: string;
+type FAQItemProps = FAQItem & {
   isOpen: boolean;
   onClick: () => void;
   isLast?: boolean;
 };
 
 const FAQItem = ({ question, answer, isOpen, onClick, isLast = false }: FAQItemProps) => {
+  // Helper function to render content that could be string or string array
+  const renderContent = (content: string | string[]) => {
+    if (Array.isArray(content)) {
+      return content.map((item, i) => (
+        <p key={i} className="text-sm text-gray-400">{item}</p>
+      ));
+    }
+    return <p className="text-sm text-gray-400">{content}</p>;
+  };
+
   return (
     <div className={`${isLast ? '' : 'border-b border-gray-800'} bg-[var(--bgColor)]`}>
       <button
         className="w-full bg-[var(--bgColor)] cursor-pointer py-5 px-4 text-left flex justify-between items-center focus:outline-none"
         onClick={onClick}
       >
-        <span className={`text-sm font-semibold ${isOpen ? 'text-[var(--btnColor)]' : 'text-white'}`}>{question}</span>
+        <span className={`text-sm font-semibold ${isOpen ? 'text-[var(--btnColor)]' : 'text-white'}`}>
+          {Array.isArray(question) ? question[0] : question}
+        </span>
         <svg
           className={`w-5 h-5 transform transition-transform duration-300 ${isOpen ? 'rotate-180 text-[var(--btnColor)]' : 'text-gray-400'}`}
           fill="none"
@@ -31,15 +41,15 @@ const FAQItem = ({ question, answer, isOpen, onClick, isLast = false }: FAQItemP
           isOpen ? 'max-h-96 opacity-100 pb-5 px-4' : 'max-h-0 opacity-0'
         }`}
       >
-        <p className="text-sm text-gray-400">{answer}</p>
+        {renderContent(answer)}
       </div>
     </div>
   );
 };
 
 type FAQItem = {
-  question: string;
-  answer: string;
+  question: string | string[];
+  answer: string | string[];
 };
 
 type FAQProps = {

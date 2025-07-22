@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import bgBlurDots from '/src/assets/bg-blur-dots.png';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
+import { getString } from '../../utils/i18n';
 
 type SupportCategory = 'general' | 'payment' | 'technical' | 'other';
 
 const Support = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const tString = useCallback((key: string, fallback: string = '') => getString(t(key), fallback), [t]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [category, setCategory] = useState<SupportCategory>('general');
@@ -197,7 +199,7 @@ const Support = () => {
                           onChange={(e) => setName(e.target.value)}
                           required
                           className="w-full bg-[var(--secondaryBgColor)] border border-gray-700 rounded-lg p-3 text-sm"
-                          placeholder={t('name')}
+                          placeholder={tString('name', 'Name')}
                         />
                       </div>
                       <div>
@@ -359,7 +361,7 @@ const Support = () => {
                         required
                         rows={5}
                         className="w-full bg-[var(--secondaryBgColor)] border border-gray-700 rounded-lg p-3 text-sm"
-                        placeholder={t('describeIssue') || "Opisz swój problem lub pytanie..."}
+                        placeholder={tString('describeIssue', 'Describe your issue or question...')}
                       ></textarea>
                     </div>
                     

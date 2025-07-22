@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { inventoryAPI, tradeHistoryAPI } from '../../services/api';
 import { toast, ToastContainer } from 'react-toastify';
 import { useLanguage } from '../../context/LanguageContext';
+import { getString } from '../../utils/i18n';
 
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -43,6 +44,7 @@ const rarityColors: Record<string, RarityColor> = {
 const Inventory: React.FC = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const tString = useCallback((key: string, fallback: string = '') => getString(t(key), fallback), [t]);
   const [inventory, setInventory] = useState<SkinItem[]>([]);
   const [soldItems, setSoldItems] = useState<Set<string>>(new Set());
   const [selectedSkins, setSelectedSkins] = useState<string[]>([]);
@@ -180,12 +182,12 @@ const Inventory: React.FC = () => {
     navigator.clipboard.writeText(tradeLink)
       .then(() => {
         setCopySuccess(true);
-        showNotification(t('tradeLinkCopied') || 'Link do wymiany skopiowany do schowka!', 'success');
+        showNotification(tString('tradeLinkCopied', 'Trade link copied to clipboard!'), 'success');
         setTimeout(() => setCopySuccess(false), 2000);
       })
       .catch(err => {
         console.error('Nie udało się skopiować linku:', err);
-        showNotification(t('copyFailed') || 'Nie udało się skopiować linku', 'error');
+        showNotification(tString('copyFailed', 'Failed to copy link'), 'error');
       });
   };
 
@@ -428,7 +430,7 @@ const Inventory: React.FC = () => {
               <textarea 
                 className="w-full bg-[var(--bgColor)] border border-gray-800 rounded-md p-3 text-white resize-none"
                 rows={3}
-                placeholder={t('enterPaymentDetails') || 'Wprowadź dane do płatności...'}
+                placeholder={tString('enterPaymentDetails', 'Enter payment details...')}
               ></textarea>
             </div>
             

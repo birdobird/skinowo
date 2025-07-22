@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { tradeHistoryAPI } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
+import { getString } from '../utils/i18n';
+
+interface TradeHistoryResponse {
+  trades: TradeItem[];
+  [key: string]: any; // For any other properties that might be in the response
+}
 
 interface TradeItem {
   id: string;
@@ -24,11 +30,13 @@ const TradeHistory: React.FC = () => {
     const fetchTradeHistory = async () => {
       try {
         setLoading(true);
-        const data = await tradeHistoryAPI.getTradeHistory();
-        setTrades(data.trades || []);
+        const data = await tradeHistoryAPI.getTradeHistory() as TradeHistoryResponse | TradeItem[];
+        // Handle both array response and object with trades property
+        const tradesData = Array.isArray(data) ? data : (data as TradeHistoryResponse)?.trades || [];
+        setTrades(tradesData);
       } catch (err) {
         console.error('Error fetching trade history:', err);
-        setError(t('tradeHistory.error') || 'Failed to load trade history');
+        setError(getString(t('tradeHistory.error'), 'Failed to load trade history'));
       } finally {
         setLoading(false);
       }
